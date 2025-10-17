@@ -1,0 +1,29 @@
+"""
+Models package - Contains all database models
+"""
+from src.models.user import User, UserRole
+from src.models.administrator import Administrator
+from src.models.professor import Professor
+from src.models.student import Student, ProfileType
+from src.models.material import Material
+from src.models.quiz import Quiz, Question, QuizAttempt, QuestionType
+from src.models.comment import Comment, CommentType, CommentStatus
+from src.models.group import Group
+
+__all__ = [
+    "User",
+    "UserRole",
+    "Administrator",
+    "Professor",
+    "Student",
+    "ProfileType",
+    "Material",
+    "Quiz",
+    "Question",
+    "QuizAttempt",
+    "QuestionType",
+    "Comment",
+    "CommentType",
+    "CommentStatus",
+    "Group",
+]
