@@ -11,48 +11,46 @@
 
       <div class="navbar-menu" [class.active]="true">
         <div class="navbar-items">
-          <a
-            routerLink="/"
-            routerLinkActive="active"
-            [routerLinkActiveOptions]="{ exact: true }"
-            class="nav-link"
-          >
+          <a routerLink="/"
+             routerLinkActive="active"
+             [routerLinkActiveOptions]="{ exact: true }"
+             class="nav-link">
             Acasă
           </a>
 
+          <a routerLink="/contact"
+             routerLinkActive="active"
+             [routerLinkActiveOptions]="{ exact: true }"
+             class="nav-link">
+            Contact
+          </a>
+
+
           <ng-container *ngIf="isLoggedIn">
-            <a
-              routerLink="/materials"
-              routerLinkActive="active"
-              class="nav-link"
-            >
+            <a routerLink="/materials"
+               routerLinkActive="active"
+               class="nav-link">
               Materiale
             </a>
             <a routerLink="/quizzes" routerLinkActive="active" class="nav-link">
               Quiz-uri
             </a>
             <ng-container *ngIf="userRole === 'professor'">
-              <a
-                routerLink="/professor/dashboard"
-                routerLinkActive="active"
-                class="nav-link"
-              >
+              <a routerLink="/professor/dashboard"
+                 routerLinkActive="active"
+                 class="nav-link">
                 Panou de control
               </a>
-              <a
-                routerLink="/professor/create-material"
-                routerLinkActive="active"
-                class="nav-link"
-              >
+              <a routerLink="/professor/create-material"
+                 routerLinkActive="active"
+                 class="nav-link">
                 Creează Material
               </a>
             </ng-container>
             <ng-container *ngIf="userRole === 'administrator'">
-              <a
-                routerLink="/admin/dashboard"
-                routerLinkActive="active"
-                class="nav-link"
-              >
+              <a routerLink="/admin/dashboard"
+                 routerLinkActive="active"
+                 class="nav-link">
                 Admin
               </a>
             </ng-container>

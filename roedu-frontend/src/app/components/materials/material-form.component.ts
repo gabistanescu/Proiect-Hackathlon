@@ -51,10 +51,7 @@ import { ProfileType } from '../../models/user.model';
               materialForm.get('title')?.touched
             "
           />
-          @if (materialForm.get('title')?.invalid &&
-          materialForm.get('title')?.touched) {
-          <span class="error-message">Titlul este obligatoriu</span>
-          }
+          <span *ngIf="materialForm.get('title')?.invalid && materialForm.get('title')?.touched" class="error-message">Titlul este obligatoriu</span>
         </div>
 
         <!-- Description -->
@@ -145,10 +142,7 @@ import { ProfileType } from '../../models/user.model';
               materialForm.get('subject')?.touched
             "
           />
-          @if (materialForm.get('subject')?.invalid &&
-          materialForm.get('subject')?.touched) {
-          <span class="error-message">Materia este obligatorie</span>
-          }
+          <span *ngIf="materialForm.get('subject')?.invalid && materialForm.get('subject')?.touched" class="error-message">Materia este obligatorie</span>
         </div>
 
         <div class="form-row">
@@ -216,17 +210,15 @@ import { ProfileType } from '../../models/user.model';
               <span class="icon">📎</span> Selectează Fișiere
             </button>
 
-            @if (uploadProgress() > 0 && uploadProgress() < 100) {
-            <div class="upload-progress">
+            <div *ngIf="uploadProgress() > 0 && uploadProgress() < 100" class="upload-progress">
               <div
                 class="progress-bar"
                 [style.width.%]="uploadProgress()"
               ></div>
             </div>
-            } @if (uploadedFiles().length > 0) {
-            <div class="uploaded-files">
-              @for (file of uploadedFiles(); track file.path) {
-              <div class="file-item">
+
+            <div *ngIf="uploadedFiles().length > 0" class="uploaded-files">
+              <div *ngFor="let file of uploadedFiles()" class="file-item">
                 <span class="file-icon">📄</span>
                 <span class="file-name">{{ file.name }}</span>
                 <button
@@ -237,9 +229,7 @@ import { ProfileType } from '../../models/user.model';
                   ✕
                 </button>
               </div>
-              }
             </div>
-            }
           </div>
         </div>
 
@@ -252,11 +242,9 @@ import { ProfileType } from '../../models/user.model';
         </div>
 
         <!-- Error Message -->
-        @if (errorMessage()) {
-        <div class="alert alert-error">
+        <div *ngIf="errorMessage()" class="alert alert-error">
           {{ errorMessage() }}
         </div>
-        }
 
         <!-- Actions -->
         <div class="form-actions">
@@ -268,13 +256,8 @@ import { ProfileType } from '../../models/user.model';
             class="btn btn-primary"
             [disabled]="materialForm.invalid || isSubmitting()"
           >
-            @if (isSubmitting()) {
-            <span>Se salvează...</span>
-            } @else {
-            <span>{{
-              isEditMode() ? 'Salvează Modificările' : 'Creează Material'
-            }}</span>
-            }
+            <span *ngIf="isSubmitting()">Se salvează...</span>
+            <span *ngIf="!isSubmitting()">{{ isEditMode() ? 'Salvează Modificările' : 'Creează Material' }}</span>
           </button>
         </div>
       </form>
@@ -636,7 +619,7 @@ export class MaterialFormComponent implements OnInit, AfterViewInit {
           is_shared: material.is_shared,
         });
 
-        this.editorContent.set(material.content || '');
+        this.editorContent.set(material.content || '')
 
         // Set editor content manually after a short delay to ensure DOM is ready
         setTimeout(() => {
