@@ -25,20 +25,20 @@ import { AuthService } from '../../services/auth.service';
               [(ngModel)]="email"
               name="email"
               class="form-control"
-              placeholder="!!!!!!!!!!!!@school.ro"
+              placeholder="mail@domeniu.ro"
               required
             />
           </div>
 
           <div class="form-group">
-            <label for="password" class="form-label">Password</label>
+            <label for="password" class="form-label">Parolă</label>
             <input
               type="password"
               id="password"
               [(ngModel)]="password"
               name="password"
               class="form-control"
-              placeholder="Enter your password"
+              placeholder="Introduceți parola"
               required
             />
           </div>
@@ -48,7 +48,7 @@ import { AuthService } from '../../services/auth.service';
             class="btn btn-primary btn-lg"
             [disabled]="loading"
           >
-            {{ loading ? 'Signing In...' : 'Sign In' }}
+            {{ loading ? 'Conectare...' : 'Conectare' }}
           </button>
         </form>
 
