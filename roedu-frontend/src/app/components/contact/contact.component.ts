@@ -18,9 +18,9 @@ import { RouterModule } from '@angular/router';
           </p>
         </div>
         <div class="hero-image">
-          <div class="hero-subtitle placeholder-image">
+          <div class="placeholder-image">
             <span class="icon">📧</span>
-            <p class="hero-subtitle">Contactați Suportul</p>
+            <p>Contactați Suportul</p>
           </div>
         </div>
       </div>
@@ -75,9 +75,28 @@ import { RouterModule } from '@angular/router';
             <a href="mailto:support&#64;roedu.ro" class="btn btn-primary btn-lg"
               >Trimite Email</a
             >
-            <a routerLink="/faq" class="btn btn-outline btn-lg"
-              >Întrebări frecvente</a
-            >
+            <button class="btn btn-outline btn-lg" (click)="openFaq()">
+              Întrebări frecvente
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- FAQ Modal -->
+      <div class="faq-overlay" *ngIf="faqVisible" (click)="closeFaq()">
+        <div class="faq-modal" (click)="$event.stopPropagation()">
+          <div class="faq-header">
+            <h3>Întrebări frecvente</h3>
+            <button class="faq-close" (click)="closeFaq()">✕</button>
+          </div>
+          <div class="faq-body">
+            <div class="faq-item" *ngFor="let f of faqs">
+              <div class="faq-question">Q: {{ f.question }}</div>
+              <div class="faq-answer">R: {{ f.answer }}</div>
+            </div>
+          </div>
+          <div class="faq-footer">
+            <button class="btn btn-primary" (click)="closeFaq()">Închide</button>
           </div>
         </div>
       </div>
@@ -217,6 +236,79 @@ import { RouterModule } from '@angular/router';
         justify-content: center;
       }
 
+      /* FAQ modal styles */
+      .faq-overlay {
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.5);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 1000;
+        padding: 1rem;
+      }
+
+      .faq-modal {
+        background: white;
+        width: 100%;
+        max-width: 720px;
+        border-radius: 12px;
+        box-shadow: 0 20px 40px rgba(2, 6, 23, 0.4);
+        overflow: hidden;
+      }
+
+      .faq-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 1rem 1.25rem;
+        background: linear-gradient(90deg, #f3f4f6, #eef2ff);
+        border-bottom: 1px solid #e6eef8;
+      }
+
+      .faq-header h3 {
+        margin: 0;
+        font-size: 1.25rem;
+        color: #0f172a;
+      }
+
+      .faq-close {
+        background: transparent;
+        border: none;
+        font-size: 1.25rem;
+        cursor: pointer;
+      }
+
+      .faq-body {
+        max-height: 60vh;
+        overflow: auto;
+        padding: 1rem 1.25rem;
+      }
+
+      .faq-item + .faq-item {
+        margin-top: 0.75rem;
+        padding-top: 0.75rem;
+        border-top: 1px dashed #eef2ff;
+      }
+
+      .faq-question {
+        font-weight: 700;
+        color: #0b1220;
+        margin-bottom: 0.25rem;
+      }
+
+      .faq-answer {
+        color: #374151;
+        line-height: 1.5;
+      }
+
+      .faq-footer {
+        padding: 1rem 1.25rem;
+        border-top: 1px solid #eef2ff;
+        text-align: right;
+        background: #ffffff;
+      }
+
       .container {
         max-width: 1200px;
         margin: 0 auto;
@@ -246,8 +338,50 @@ import { RouterModule } from '@angular/router';
         .cta-section h2 {
           font-size: 2rem;
         }
+
+        .faq-modal {
+          max-width: 92%;
+        }
       }
     `,
   ],
 })
-export class ContactComponent {}
+export class ContactComponent {
+  faqVisible = false;
+
+  faqs = [
+    {
+      question: 'Cum îmi creez un cont?',
+      answer:
+        'Înregistrarea publică nu este disponibilă. Contactează administratorul școlii tale sau cere acces prin echipa RoEdu la support@roedu.ro.',
+    },
+    {
+      question: 'Am uitat parola. Ce fac?',
+      answer:
+        'Contactează administratorul școlii sau echipa de suport pentru resetarea parolei. Administratorii pot reseta parolele pentru utilizatorii din școală.',
+    },
+    {
+      question: 'Cum pot încărca materiale?',
+      answer:
+        'Doar profesorii pot încărca materiale. După autentificare, accesează secțiunea "Materiale" și folosește butonul "Material Nou".',
+    },
+    {
+      question: 'Cum pot contacta echipa tehnică?',
+      answer:
+        'Trimite un email la support@roedu.ro sau folosește formularul de contact disponibil pe această pagină.',
+    },
+    {
+      question: 'Există o documentație sau FAQ extinsă?',
+      answer:
+        'Da — poți găsi resurse și ghiduri în secțiunea Întrebări frecvente. Dacă ai nevoie de mai multe informații, scrie-ne la info@roedu.ro.',
+    },
+  ];
+
+  openFaq() {
+    this.faqVisible = true;
+  }
+
+  closeFaq() {
+    this.faqVisible = false;
+  }
+}
