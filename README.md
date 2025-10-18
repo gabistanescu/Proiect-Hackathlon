@@ -1,4 +1,4 @@
-#3 🎓 RoEdu - Platformă Educațională pentru Școlile din România
+#4 🎓 RoEdu - Platformă Educațională pentru Școlile din România
 
 ## 📋 Despre Proiect
 
