@@ -29,12 +29,6 @@ export class AppComponent implements OnInit, OnDestroy {
   ngOnInit(): void {
     this.checkLoginStatus();
     
-    // Restore user session if token exists (e.g., after page refresh)
-    const token = localStorage.getItem('access_token');
-    if (token) {
-      this.authService.loadCurrentUser();
-    }
-    
     this.authService.isLoggedIn$
       .pipe(takeUntil(this.destroy$))
       .subscribe(status => {

@@ -1,7 +1,7 @@
 import { inject } from '@angular/core';
 import { Router, CanActivateFn } from '@angular/router';
 import { AuthService } from '../services/auth.service';
-import { map, switchMap, take } from 'rxjs/operators';
+import { map, switchMap, take, firstValueFrom } from 'rxjs/operators';
 import { of } from 'rxjs';
 
 export const AuthGuard: CanActivateFn = (route, state) => {
@@ -17,23 +17,21 @@ export const AuthGuard: CanActivateFn = (route, state) => {
     return false;
   }
 
-  // We have a token, check if user is loaded
+  // We have a token, check if user is already loaded
   return authService.currentUser$.pipe(
     take(1),
     switchMap((user) => {
       if (user) {
-        // User is already loaded
+        // User is already loaded, allow access
         return of(true);
       } else {
-        // User not loaded yet, try to load from backend
-        authService.loadCurrentUser();
-        // Wait for user to load
-        return authService.currentUser$.pipe(
-          take(1),
+        // User not loaded yet, load from backend
+        return authService.loadCurrentUser().pipe(
           map((loadedUser) => {
             if (loadedUser) {
               return true;
             } else {
+              // Failed to load user, redirect to login
               router.navigate(['/login'], { queryParams: { returnUrl: state.url } });
               return false;
             }
