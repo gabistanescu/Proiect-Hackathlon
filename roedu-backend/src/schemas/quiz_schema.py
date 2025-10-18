@@ -1,5 +1,5 @@
 from pydantic import BaseModel, Field, ConfigDict, field_validator
-from typing import List, Optional, Dict, Any
+from typing import List, Optional, Dict, Any, Union
 from datetime import datetime
 from enum import Enum
 
@@ -92,17 +92,18 @@ class QuizCopyRequest(BaseModel):
 
 # Quiz Attempt Schemas
 class QuizAttemptCreate(BaseModel):
-    quiz_id: int
-    answers: Dict[int, List[str]]  # question_id -> selected answers or free text
+    answers: Dict[int, Union[List[str], str]]  # question_id -> selected answers (list) or free text (string)
 
 class QuizAttemptResponse(BaseModel):
     id: int
     quiz_id: int
     student_id: int
-    score: float
-    max_score: float
+    score: Optional[float] = None
+    max_score: Optional[float] = None
     started_at: datetime
     completed_at: Optional[datetime] = None
+    time_remaining: Optional[int] = None  # in seconds
+    is_expired: int = 0
     
     model_config = ConfigDict(from_attributes=True)
 

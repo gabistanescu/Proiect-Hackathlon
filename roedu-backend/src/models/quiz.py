@@ -65,6 +65,8 @@ class QuizAttempt(Base):
     max_score = Column(Float)
     started_at = Column(DateTime, default=datetime.utcnow)
     completed_at = Column(DateTime)
+    time_remaining = Column(Integer)  # in seconds, for timer persistence
+    is_expired = Column(Integer, default=0)  # 0 or 1, using Integer for SQLite compatibility
 
     # Relationships
     quiz = relationship("Quiz", back_populates="attempts")

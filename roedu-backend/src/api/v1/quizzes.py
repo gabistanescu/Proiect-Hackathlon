@@ -60,8 +60,27 @@ def list_quizzes(
 ):
     """
     List quizzes with optional filters
+    - Professors see all quizzes they created
+    - Students see only quizzes available to them (no group or in their group)
     """
     query = db.query(Quiz)
+    
+    # If student, filter to only show available quizzes
+    if current_user.role.value == "student":
+        from src.models.student import Student
+        student = db.query(Student).filter(Student.id == current_user.id).first()
+        if student:
+            # Student sees: quizzes with no group OR quizzes where they're in the group
+            from sqlalchemy import or_
+            query = query.filter(
+                or_(
+                    Quiz.group_id.is_(None),  # Public quizzes (no group)
+                    Quiz.group_id.in_([g.id for g in student.groups])  # Quizzes for their groups
+                )
+            )
+    elif current_user.role.value == "professor":
+        # Professors see only their own quizzes
+        query = query.filter(Quiz.professor_id == current_user.id)
     
     if subject:
         query = query.filter(Quiz.subject.contains(subject))
@@ -83,6 +102,8 @@ def get_quiz(
 ):
     """
     Get quiz details with all questions
+    - Professors can see only their own quizzes
+    - Students can see quizzes available to them
     """
     quiz = db.query(Quiz).filter(Quiz.id == quiz_id).first()
     if not quiz:
@@ -90,6 +111,25 @@ def get_quiz(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Quiz not found"
         )
+    
+    # Authorization check
+    if current_user.role.value == "professor":
+        if quiz.professor_id != current_user.id:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="You don't have permission to view this quiz"
+            )
+    elif current_user.role.value == "student":
+        # Check if student has access to this quiz
+        if quiz.group_id:
+            from src.models.student import Student
+            student = db.query(Student).filter(Student.id == current_user.id).first()
+            if not student or quiz.group_id not in [g.id for g in student.groups]:
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail="You don't have access to this quiz"
+                )
+    
     return quiz
 
 @router.post("/", response_model=QuizResponse, status_code=status.HTTP_201_CREATED)
@@ -286,6 +326,25 @@ def submit_quiz_attempt(
             detail="Quiz not found"
         )
     
+    # Check if student is allocated to this quiz
+    if quiz.group_id:
+        # Quiz is assigned to a specific group
+        from src.models.student import Student
+        student = db.query(Student).filter(Student.id == current_user.id).first()
+        if not student:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="User is not a student"
+            )
+        
+        # Check if student is in the group
+        group = quiz.group
+        if student not in group.students:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="You are not allocated to this quiz. Only students in the assigned group can take it."
+            )
+    
     # Calculate score
     total_score = 0.0
     max_score = 0.0
@@ -449,3 +508,192 @@ def generate_ai_quiz(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to generate quiz: {str(e)}"
         )
+
+# NEW ENDPOINTS FOR TIMER PERSISTENCE AND AUTO-SUBMISSION
+
+@router.post("/start/{quiz_id}", response_model=QuizAttemptResponse, status_code=status.HTTP_201_CREATED)
+def start_quiz_attempt(
+    quiz_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Start a new quiz attempt or resume an existing one
+    Returns the attempt with initial time_remaining set
+    """
+    if current_user.role.value != "student":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only students can start quiz attempts"
+        )
+    
+    from src.models.student import Student
+    
+    quiz = db.query(Quiz).filter(Quiz.id == quiz_id).first()
+    if not quiz:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Quiz not found"
+        )
+    
+    # Check if student is allocated to this quiz
+    if quiz.group_id:
+        student = db.query(Student).filter(Student.id == current_user.id).first()
+        if not student or quiz.group_id not in [g.id for g in student.groups]:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="You are not allocated to this quiz"
+            )
+    
+    # Check if there's an active attempt (not completed)
+    existing_attempt = db.query(QuizAttempt).filter(
+        QuizAttempt.quiz_id == quiz_id,
+        QuizAttempt.student_id == current_user.id,
+        QuizAttempt.completed_at.is_(None)
+    ).first()
+    
+    if existing_attempt:
+        # Resume existing attempt - recalculate remaining time
+        time_elapsed = (datetime.utcnow() - existing_attempt.started_at).total_seconds()
+        total_time_seconds = quiz.time_limit * 60 if quiz.time_limit else 3600
+        time_remaining = max(0, int(total_time_seconds - time_elapsed))
+        
+        existing_attempt.time_remaining = time_remaining
+        if time_remaining <= 0:
+            existing_attempt.is_expired = 1
+        
+        db.commit()
+        db.refresh(existing_attempt)
+        return existing_attempt
+    
+    # Create new attempt
+    new_attempt = QuizAttempt(
+        quiz_id=quiz_id,
+        student_id=current_user.id,
+        started_at=datetime.utcnow(),
+        time_remaining=(quiz.time_limit * 60) if quiz.time_limit else 3600,
+        is_expired=0
+    )
+    
+    db.add(new_attempt)
+    db.commit()
+    db.refresh(new_attempt)
+    
+    return new_attempt
+
+@router.put("/{attempt_id}/timer-sync", response_model=QuizAttemptResponse)
+def sync_timer(
+    attempt_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Sync timer for an active attempt
+    Recalculates time remaining based on server time
+    """
+    attempt = db.query(QuizAttempt).filter(QuizAttempt.id == attempt_id).first()
+    if not attempt:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Attempt not found"
+        )
+    
+    # Verify student owns this attempt
+    if attempt.student_id != current_user.id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Not authorized"
+        )
+    
+    # If already completed or expired, return as is
+    if attempt.completed_at or attempt.is_expired:
+        return attempt
+    
+    # Recalculate time remaining
+    quiz = attempt.quiz
+    time_elapsed = (datetime.utcnow() - attempt.started_at).total_seconds()
+    total_time_seconds = quiz.time_limit * 60 if quiz.time_limit else 3600
+    time_remaining = max(0, int(total_time_seconds - time_elapsed))
+    
+    attempt.time_remaining = time_remaining
+    if time_remaining <= 0:
+        attempt.is_expired = 1
+    
+    db.commit()
+    db.refresh(attempt)
+    
+    return attempt
+
+@router.post("/{attempt_id}/auto-submit", response_model=QuizAttemptResponse, status_code=status.HTTP_200_OK)
+def auto_submit_quiz_attempt(
+    attempt_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Auto-submit a quiz attempt when time expires
+    Marks as completed without changing answers
+    """
+    attempt = db.query(QuizAttempt).filter(QuizAttempt.id == attempt_id).first()
+    if not attempt:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Attempt not found"
+        )
+    
+    # Verify student owns this attempt
+    if attempt.student_id != current_user.id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Not authorized"
+        )
+    
+    if attempt.completed_at:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Attempt already submitted"
+        )
+    
+    # Mark as expired and completed
+    attempt.is_expired = 1
+    attempt.time_remaining = 0
+    attempt.completed_at = datetime.utcnow()
+    
+    # If answers were provided, calculate score
+    if attempt.answers:
+        quiz = attempt.quiz
+        total_score = 0.0
+        max_score = 0.0
+        
+        try:
+            answers_dict = json.loads(attempt.answers)
+            
+            for question in quiz.questions:
+                max_score += question.points
+                student_answers = answers_dict.get(str(question.id), [])
+                if isinstance(student_answers, str):
+                    student_answers = [student_answers]
+                
+                if question.question_type == QuestionType.SINGLE_CHOICE:
+                    correct_answers = json.loads(question.correct_answers)
+                    if student_answers and student_answers[0] in correct_answers:
+                        total_score += question.points
+                
+                elif question.question_type == QuestionType.MULTIPLE_CHOICE:
+                    correct_answers = json.loads(question.correct_answers)
+                    if set(student_answers) == set(correct_answers):
+                        total_score += question.points
+                
+                elif question.question_type == QuestionType.FREE_TEXT:
+                    # For free text, add default 0 (will be evaluated later)
+                    pass
+            
+            attempt.score = total_score
+            attempt.max_score = max_score
+        except (json.JSONDecodeError, KeyError, TypeError):
+            pass
+    
+    db.commit()
+    db.refresh(attempt)
+    
+    return attempt
