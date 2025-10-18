@@ -497,8 +497,36 @@ export class QuizTakeComponent implements OnInit, OnDestroy {
         this.startTime = new Date();
         
         if (quiz.time_limit && quiz.time_limit > 0) {
-          this.timeLeft = quiz.time_limit * 60;
-          this.startTimer();
+          // Try to restore timer from localStorage
+          const savedTimerKey = `quiz_${quizId}_timer`;
+          const savedTimeLeft = localStorage.getItem(savedTimerKey);
+          
+          if (savedTimeLeft) {
+            // Restore from localStorage
+            const savedTime = parseInt(savedTimeLeft, 10);
+            const savedStartTime = localStorage.getItem(`quiz_${quizId}_start_time`);
+            
+            if (savedStartTime) {
+              const startTime = new Date(savedStartTime);
+              const elapsedSeconds = Math.floor((new Date().getTime() - startTime.getTime()) / 1000);
+              this.timeLeft = Math.max(0, savedTime - elapsedSeconds);
+              
+              if (this.timeLeft <= 0) {
+                // Time expired during refresh
+                this.autoSubmitQuiz();
+                return;
+              }
+            } else {
+              this.timeLeft = savedTime;
+            }
+          } else {
+            // First time taking the quiz
+            this.timeLeft = quiz.time_limit * 60;
+            localStorage.setItem(savedTimerKey, this.timeLeft.toString());
+            localStorage.setItem(`quiz_${quizId}_start_time`, new Date().toISOString());
+          }
+          
+          this.startTimer(quizId);
         }
         
         this.isLoading = false;
@@ -522,11 +550,18 @@ export class QuizTakeComponent implements OnInit, OnDestroy {
     });
   }
 
-  private startTimer(): void {
+  private startTimer(quizId: number): void {
     this.timerInterval = setInterval(() => {
       this.timeLeft--;
+      
+      // Save timer to localStorage every second
+      const timerKey = `quiz_${quizId}_timer`;
+      localStorage.setItem(timerKey, this.timeLeft.toString());
+      
       if (this.timeLeft <= 0) {
         clearInterval(this.timerInterval);
+        localStorage.removeItem(timerKey);
+        localStorage.removeItem(`quiz_${quizId}_start_time`);
         this.autoSubmitQuiz();
       }
     }, 1000);
