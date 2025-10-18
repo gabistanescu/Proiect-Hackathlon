@@ -19,28 +19,47 @@
           >
             Acasă
           </a>
-          <a routerLink="/how-to-access"
-          routerLinkActive="active"
-          [routerLinkActiveOptions]="{ exact: true }"
-          class="nav-link">
-          Cum obții Accesul
-        </a>
-        <a routerLink="/contact"
-        routerLinkActive="active"
-        [routerLinkActiveOptions]="{ exact: true }"
-        class="nav-link">
-        Contact
-      </a>
-      
-      
-      <ng-container *ngIf="isLoggedIn">
-        <a routerLink="/materials"
-               routerLinkActive="active"
-               class="nav-link">
-              Materiale
+
+          <a
+            routerLink="/about"
+            routerLinkActive="active"
+            [routerLinkActiveOptions]="{ exact: true }"
+            class="nav-link"
+          >
+            Despre Noi
+          </a>
+          <a
+            routerLink="/how-to-access"
+            routerLinkActive="active"
+            [routerLinkActiveOptions]="{ exact: true }"
+            class="nav-link"
+          >
+            Cum obții Accesul
+          </a>
+          <a
+            routerLink="/contact"
+            routerLinkActive="active"
+            [routerLinkActiveOptions]="{ exact: true }"
+            class="nav-link"
+          >
+            Contact
+          </a>
+
+          <ng-container *ngIf="isLoggedIn">
+            <a routerLink="/feed" routerLinkActive="active" class="nav-link">
+              📱 Flux de postări
+            </a>
+            <a
+              routerLink="/materials"
+              routerLinkActive="active"
+              class="nav-link"
+            >
+              📚 Materiale
             </a>
             <a routerLink="/quizzes" routerLinkActive="active" class="nav-link">
               Chestionare
+            </a>
+              📝 Chestionare
             </a>
             <ng-container *ngIf="userRole === 'administrator'">
               <a routerLink="/admin/dashboard"
@@ -48,6 +67,13 @@
               class="nav-link">
               Admin
             </a>
+              <a
+                routerLink="/admin/dashboard"
+                routerLinkActive="active"
+                class="nav-link"
+              >
+                Admin
+              </a>
             </ng-container>
           </ng-container>
           
