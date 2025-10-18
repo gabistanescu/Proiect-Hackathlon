@@ -475,8 +475,16 @@ export class QuizResultsComponent implements OnInit {
         this.loadQuizDetails(result.attempt.quiz_id);
         this.isLoading = false;
       },
-      error: () => {
-        this.errorMessage = 'Nu s-au putut încărca rezultatele. Te rog încearcă din nou.';
+      error: (error) => {
+        // Check if it's an authentication error
+        if (error.status === 401 || error.status === 403) {
+          this.errorMessage = 'Trebuie să fii logat pentru a vedea rezultatele.';
+          setTimeout(() => {
+            this.router.navigate(['/login'], { queryParams: { returnUrl: this.router.url } });
+          }, 2000);
+        } else {
+          this.errorMessage = 'Nu s-au putut încărca rezultatele. Te rog încearcă din nou.';
+        }
         this.isLoading = false;
       }
     });
