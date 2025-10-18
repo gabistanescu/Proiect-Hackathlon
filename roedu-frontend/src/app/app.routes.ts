@@ -1,6 +1,5 @@
 import { Routes } from '@angular/router';
 import { AuthGuard } from './guards/auth.guard';
-import { GuestAccessGuard } from './guards/guest-access.guard';
 
 export const routes: Routes = [
   {
@@ -17,18 +16,23 @@ export const routes: Routes = [
   {
     path: 'about',
     loadComponent: () =>
-      import('./components/about/about.component').then((m) => m.AboutComponent),
+      import('./components/about/about.component').then(
+        (m) => m.AboutComponent
+      ),
   },
   {
     path: 'contact',
     loadComponent: () =>
-      import('./components/contact/contact.component').then((m) => m.ContactComponent),
+      import('./components/contact/contact.component').then(
+        (m) => m.ContactComponent
+      ),
   },
   {
     path: 'how-to-access',
-    canActivate: [GuestAccessGuard],
     loadComponent: () =>
-      import('./components/access/access.component').then((m) => m.AccessComponent),
+      import('./components/access/access.component').then(
+        (m) => m.AccessComponent
+      ),
   },
   {
     path: 'login',
@@ -40,14 +44,6 @@ export const routes: Routes = [
     loadComponent: () =>
       import('./components/auth/register.component').then(
         (m) => m.RegisterComponent
-      ),
-  },
-  {
-    path: 'profile',
-    canActivate: [AuthGuard],
-    loadComponent: () =>
-      import('./pages/profile/profile.component').then(
-        (m) => m.ProfileComponent
       ),
   },
   {
@@ -83,6 +79,12 @@ export const routes: Routes = [
           ),
       },
     ],
+  },
+  {
+    path: 'feed',
+    canActivate: [AuthGuard],
+    loadComponent: () =>
+      import('./pages/feed/feed.component').then((m) => m.FeedComponent),
   },
   {
     path: '**',

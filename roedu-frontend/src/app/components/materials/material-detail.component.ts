@@ -1,6 +1,7 @@
 import { Component, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
+import { FormsModule } from '@angular/forms';
 import {
   DomSanitizer,
   SafeHtml,
@@ -9,12 +10,14 @@ import {
 import { MaterialService } from '../../services/material.service';
 import { Material } from '../../models/material.model';
 import { AuthService } from '../../services/auth.service';
+import { CommentService } from '../../services/comment.service';
+import { Comment } from '../../models/comment.model';
 import { MaterialSuggestionsComponent } from './material-suggestions.component';
 
 @Component({
   selector: 'app-material-detail',
   standalone: true,
-  imports: [CommonModule, MaterialSuggestionsComponent],
+  imports: [CommonModule, FormsModule, MaterialSuggestionsComponent],
   template: `
     <div class="material-detail-container">
       @if (loading()) {
@@ -56,8 +59,12 @@ import { MaterialSuggestionsComponent } from './material-suggestions.component';
             >
             }
             <span class="badge badge-subject">{{ material()!.subject }}</span>
-            @if (!material()!.is_shared) {
+            @if (material()!.visibility === 'private') {
             <span class="badge badge-private">🔒 Privat</span>
+            } @else if (material()!.visibility === 'professors_only') {
+            <span class="badge badge-professors">👨‍🏫 Doar profesori</span>
+            } @else {
+            <span class="badge badge-public">🌐 Public</span>
             }
           </div>
 
@@ -96,7 +103,8 @@ import { MaterialSuggestionsComponent } from './material-suggestions.component';
             </div>
           </div>
 
-          @if (isProfessor()) {
+          <!-- Feedback button only for non-owners -->
+          @if (isProfessor() && !canEdit()) {
           <button
             class="btn-feedback"
             [class.active]="material()!.user_has_feedback"
@@ -181,6 +189,65 @@ import { MaterialSuggestionsComponent } from './material-suggestions.component';
           </div>
         </div>
         }
+
+        <!-- Comments Section -->
+        <div class="comments-section">
+          <h3>💬 Comentarii ({{ comments().length }})</h3>
+
+          <!-- Add Comment Form -->
+          <div class="add-comment-form">
+            <textarea
+              [(ngModel)]="newCommentText"
+              placeholder="Adaugă un comentariu..."
+              class="comment-textarea"
+              rows="3"
+            ></textarea>
+            <button
+              class="btn btn-primary"
+              (click)="addComment()"
+              [disabled]="!newCommentText.trim() || isSubmittingComment()"
+            >
+              {{
+                isSubmittingComment()
+                  ? 'Se trimite...'
+                  : '📝 Trimite comentariul'
+              }}
+            </button>
+          </div>
+
+          <!-- Comments List -->
+          @if (comments().length === 0) {
+          <p class="no-comments">
+            Niciun comentariu încă. Fii primul care comentează!
+          </p>
+          } @else {
+          <div class="comments-list">
+            @for (comment of comments(); track comment.id) {
+            <div class="comment-card">
+              <div class="comment-header">
+                <span class="comment-author">
+                  {{ comment.username || 'Anonim' }}
+                </span>
+                <span class="comment-date">{{
+                  formatDate(comment.created_at)
+                }}</span>
+              </div>
+              <div class="comment-content">
+                {{ comment.text }}
+              </div>
+              @if (canDeleteComment(comment)) {
+              <button
+                class="btn-delete-comment"
+                (click)="deleteComment(comment.id)"
+              >
+                🗑️ Șterge
+              </button>
+              }
+            </div>
+            }
+          </div>
+          }
+        </div>
 
         <!-- PDF Viewer Modal -->
         @if (selectedPdf()) {
@@ -599,6 +666,103 @@ import { MaterialSuggestionsComponent } from './material-suggestions.component';
         background: #38a169;
       }
 
+      /* Comments Section */
+      .comments-section {
+        margin-top: 3rem;
+        padding: 2rem;
+        background: white;
+        border-radius: 12px;
+        border: 2px solid #e2e8f0;
+      }
+
+      .comments-section h3 {
+        color: #2d3748;
+        margin-bottom: 1.5rem;
+        font-size: 1.5rem;
+      }
+
+      .add-comment-form {
+        margin-bottom: 2rem;
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+      }
+
+      .comment-textarea {
+        width: 100%;
+        padding: 1rem;
+        border: 2px solid #e2e8f0;
+        border-radius: 8px;
+        font-size: 1rem;
+        font-family: inherit;
+        resize: vertical;
+        transition: border-color 0.3s;
+      }
+
+      .comment-textarea:focus {
+        outline: none;
+        border-color: #5548d9;
+      }
+
+      .no-comments {
+        text-align: center;
+        color: #a0aec0;
+        padding: 2rem;
+        font-style: italic;
+      }
+
+      .comments-list {
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+      }
+
+      .comment-card {
+        padding: 1.5rem;
+        background: #f7fafc;
+        border-radius: 8px;
+        border-left: 4px solid #5548d9;
+      }
+
+      .comment-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 0.75rem;
+      }
+
+      .comment-author {
+        font-weight: 600;
+        color: #2d3748;
+        font-size: 0.95rem;
+      }
+
+      .comment-date {
+        color: #a0aec0;
+        font-size: 0.85rem;
+      }
+
+      .comment-content {
+        color: #4a5568;
+        line-height: 1.6;
+        margin-bottom: 0.75rem;
+      }
+
+      .btn-delete-comment {
+        background: #fc8181;
+        color: white;
+        border: none;
+        padding: 0.5rem 1rem;
+        border-radius: 6px;
+        font-size: 0.875rem;
+        cursor: pointer;
+        transition: background 0.3s;
+      }
+
+      .btn-delete-comment:hover {
+        background: #f56565;
+      }
+
       /* PDF Viewer Modal */
       .pdf-viewer-modal {
         position: fixed;
@@ -779,11 +943,17 @@ export class MaterialDetailComponent implements OnInit {
   currentUser = signal<any>(null);
   showSuggestionsModal = signal(false);
 
+  // Comments
+  comments = signal<Comment[]>([]);
+  newCommentText = '';
+  isSubmittingComment = signal(false);
+
   constructor(
     private route: ActivatedRoute,
     private router: Router,
     private materialService: MaterialService,
     private authService: AuthService,
+    private commentService: CommentService,
     private sanitizer: DomSanitizer
   ) {}
 
@@ -795,6 +965,7 @@ export class MaterialDetailComponent implements OnInit {
     const id = this.route.snapshot.paramMap.get('id');
     if (id) {
       this.loadMaterial(+id);
+      this.loadComments(+id);
     }
   }
 
@@ -808,6 +979,85 @@ export class MaterialDetailComponent implements OnInit {
         console.error('Error loading material:', err);
         this.loading.set(false);
       },
+    });
+  }
+
+  loadComments(materialId: number) {
+    this.commentService.getComments(materialId).subscribe({
+      next: (comments) => {
+        this.comments.set(comments);
+      },
+      error: (err) => {
+        console.error('Error loading comments:', err);
+      },
+    });
+  }
+
+  addComment() {
+    const mat = this.material();
+    if (!mat || !this.newCommentText.trim()) return;
+
+    this.isSubmittingComment.set(true);
+
+    this.commentService
+      .createComment({
+        material_id: mat.id,
+        text: this.newCommentText.trim(),
+        is_question: false,
+      })
+      .subscribe({
+        next: (comment) => {
+          this.comments.set([comment, ...this.comments()]);
+          this.newCommentText = '';
+          this.isSubmittingComment.set(false);
+        },
+        error: (err) => {
+          console.error('Error adding comment:', err);
+          alert('Eroare la adăugarea comentariului');
+          this.isSubmittingComment.set(false);
+        },
+      });
+  }
+
+  deleteComment(commentId: number) {
+    if (!confirm('Sigur vrei să ștergi acest comentariu?')) return;
+
+    this.commentService.deleteComment(commentId).subscribe({
+      next: () => {
+        this.comments.set(this.comments().filter((c) => c.id !== commentId));
+      },
+      error: (err) => {
+        console.error('Error deleting comment:', err);
+        alert('Eroare la ștergerea comentariului');
+      },
+    });
+  }
+
+  canDeleteComment(comment: Comment): boolean {
+    const user = this.currentUser();
+    if (!user) return false;
+
+    // Poate șterge propriul comentariu sau dacă este owner-ul materialului
+    return comment.user_id === user.id || this.canEdit();
+  }
+
+  formatDate(date: Date | string): string {
+    const d = new Date(date);
+    const now = new Date();
+    const diff = now.getTime() - d.getTime();
+    const minutes = Math.floor(diff / 60000);
+    const hours = Math.floor(minutes / 60);
+    const days = Math.floor(hours / 24);
+
+    if (minutes < 1) return 'Acum';
+    if (minutes < 60) return `Acum ${minutes} min`;
+    if (hours < 24) return `Acum ${hours}h`;
+    if (days < 7) return `Acum ${days} zile`;
+
+    return d.toLocaleDateString('ro-RO', {
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric',
     });
   }
 
