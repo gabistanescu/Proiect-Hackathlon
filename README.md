@@ -23,6 +23,9 @@ RoEdu este o platformă educațională modernă destinată școlilor din Români
 👨‍🎓 Elevi: andrei.pop@roedu.ro / Stud1234! (10 elevi total)
 ```
 
+speis
+
+
 **Vezi lista completă**: `UTILIZATORI_INITIALIZATI.md`
 
 ## 🚀 Quick Start
