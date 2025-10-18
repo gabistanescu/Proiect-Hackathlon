@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { HttpClient, HttpHeaders } from '@angular/common/http';
+import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 
 @Injectable({
@@ -23,9 +23,19 @@ export class ApiService {
     return new HttpHeaders(headers);
   }
 
-  get<T>(endpoint: string): Observable<T> {
+  get<T>(endpoint: string, params?: any): Observable<T> {
+    let httpParams = new HttpParams();
+    if (params) {
+      Object.keys(params).forEach((key) => {
+        if (params[key] !== undefined && params[key] !== null) {
+          httpParams = httpParams.set(key, params[key].toString());
+        }
+      });
+    }
+
     return this.http.get<T>(`${this.apiUrl}${endpoint}`, {
       headers: this.getHeaders(),
+      params: httpParams,
     });
   }
 

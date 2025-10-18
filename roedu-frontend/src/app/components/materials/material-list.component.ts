@@ -94,9 +94,25 @@ import { Material } from '../../models/material.model';
         <div class="material-card" (click)="viewMaterial(material.id)">
           <div class="card-header">
             <h3>{{ material.title }}</h3>
-            @if (!material.is_shared) {
-            <span class="badge-private">🔒</span>
-            }
+            <div class="header-badges">
+              @if (material.visibility === 'public') {
+              <span
+                class="badge-visibility badge-public"
+                title="Vizibil pentru toți"
+                >🌐</span
+              >
+              } @else if (material.visibility === 'professors_only') {
+              <span
+                class="badge-visibility badge-professors"
+                title="Doar profesori"
+                >👨‍🏫</span
+              >
+              } @else if (material.visibility === 'private') {
+              <span class="badge-visibility badge-private-vis" title="Privat"
+                >🔒</span
+              >
+              }
+            </div>
           </div>
 
           @if (material.description) {
@@ -138,6 +154,33 @@ import { Material } from '../../models/material.model';
             }
           </div>
           }
+
+          <!-- Feedback Section -->
+          <div class="card-feedback" (click)="$event.stopPropagation()">
+            @if (isProfessor()) {
+            <button
+              class="feedback-btn"
+              [class.active]="material.user_has_feedback"
+              (click)="toggleProfessorFeedback(material)"
+              title="M-a ajutat ca profesor"
+            >
+              💡 {{ material.feedback_professors_count || 0 }}
+            </button>
+            } @if (isStudent()) {
+            <button
+              class="feedback-btn"
+              [class.active]="material.user_has_feedback"
+              (click)="toggleStudentFeedback(material)"
+              title="M-a ajutat ca student"
+            >
+              ⭐ {{ material.feedback_students_count || 0 }}
+            </button>
+            } @if (material.suggestions_count > 0 && isProfessor()) {
+            <span class="suggestions-count" title="Sugestii de îmbunătățire">
+              📝 {{ material.suggestions_count }}
+            </span>
+            }
+          </div>
 
           <div class="card-footer">
             <span class="date">{{ formatDate(material.created_at) }}</span>
@@ -365,6 +408,32 @@ import { Material } from '../../models/material.model';
         line-height: 1.3;
       }
 
+      .header-badges {
+        display: flex;
+        gap: 0.5rem;
+        margin-left: 0.5rem;
+      }
+
+      .badge-visibility {
+        font-size: 1.2rem;
+        padding: 0.2rem 0.5rem;
+        border-radius: 6px;
+        display: inline-flex;
+        align-items: center;
+      }
+
+      .badge-public {
+        background: #e8f5e9;
+      }
+
+      .badge-professors {
+        background: #e3f2fd;
+      }
+
+      .badge-private-vis {
+        background: #f5f5f5;
+      }
+
       .badge-private {
         font-size: 1rem;
         margin-left: 0.5rem;
@@ -445,6 +514,52 @@ import { Material } from '../../models/material.model';
         color: white;
         border-radius: 12px;
         font-size: 0.75rem;
+      }
+
+      /* Feedback Section */
+      .card-feedback {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        margin-top: 1rem;
+        padding-top: 1rem;
+        border-top: 1px solid #f0f0f0;
+      }
+
+      .feedback-btn {
+        display: flex;
+        align-items: center;
+        gap: 0.4rem;
+        padding: 0.5rem 0.75rem;
+        background: #f5f5f5;
+        border: 2px solid transparent;
+        border-radius: 8px;
+        font-size: 0.9rem;
+        cursor: pointer;
+        transition: all 0.3s;
+      }
+
+      .feedback-btn:hover {
+        background: #e8e8e8;
+      }
+
+      .feedback-btn.active {
+        background: #fff3e0;
+        border-color: #ff9800;
+        color: #ff9800;
+        font-weight: 600;
+      }
+
+      .suggestions-count {
+        display: flex;
+        align-items: center;
+        gap: 0.3rem;
+        padding: 0.4rem 0.7rem;
+        background: #e3f2fd;
+        border-radius: 8px;
+        font-size: 0.85rem;
+        color: #1976d2;
+        font-weight: 500;
       }
 
       .card-footer {
@@ -667,6 +782,10 @@ export class MaterialListComponent implements OnInit {
     return this.currentUser()?.role === 'professor';
   }
 
+  isStudent(): boolean {
+    return this.currentUser()?.role === 'student';
+  }
+
   canEdit(material: Material): boolean {
     const user = this.currentUser();
     return user?.role === 'professor' && user?.id === material.professor_id;
@@ -718,5 +837,49 @@ export class MaterialListComponent implements OnInit {
   goToPage(page: number) {
     this.currentPage.set(page);
     this.loadMaterials();
+  }
+
+  toggleProfessorFeedback(material: Material) {
+    this.materialService.toggleProfessorFeedback(material.id).subscribe({
+      next: (response) => {
+        // Update material locally
+        const materials = this.materials();
+        const index = materials.findIndex((m) => m.id === material.id);
+        if (index !== -1) {
+          materials[index] = {
+            ...materials[index],
+            user_has_feedback: response.has_feedback,
+            feedback_professors_count: response.total_count,
+          };
+          this.materials.set([...materials]);
+        }
+      },
+      error: (err) => {
+        console.error('Error toggling professor feedback:', err);
+        alert('Eroare la salvarea feedback-ului');
+      },
+    });
+  }
+
+  toggleStudentFeedback(material: Material) {
+    this.materialService.toggleStudentFeedback(material.id).subscribe({
+      next: (response) => {
+        // Update material locally
+        const materials = this.materials();
+        const index = materials.findIndex((m) => m.id === material.id);
+        if (index !== -1) {
+          materials[index] = {
+            ...materials[index],
+            user_has_feedback: response.has_feedback,
+            feedback_students_count: response.total_count,
+          };
+          this.materials.set([...materials]);
+        }
+      },
+      error: (err) => {
+        console.error('Error toggling student feedback:', err);
+        alert('Eroare la salvarea feedback-ului');
+      },
+    });
   }
 }

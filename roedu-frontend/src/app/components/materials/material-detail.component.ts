@@ -9,11 +9,12 @@ import {
 import { MaterialService } from '../../services/material.service';
 import { Material } from '../../models/material.model';
 import { AuthService } from '../../services/auth.service';
+import { MaterialSuggestionsComponent } from './material-suggestions.component';
 
 @Component({
   selector: 'app-material-detail',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, MaterialSuggestionsComponent],
   template: `
     <div class="material-detail-container">
       @if (loading()) {
@@ -68,6 +69,72 @@ import { AuthService } from '../../services/auth.service';
           </div>
           } @if (material()!.description) {
           <p class="description">{{ material()!.description }}</p>
+          }
+        </div>
+
+        <!-- Feedback Section -->
+        <div class="feedback-section">
+          <h3>💡 Feedback</h3>
+          <div class="feedback-stats">
+            <div class="stat-card">
+              <div class="stat-icon">👨‍🏫</div>
+              <div class="stat-info">
+                <div class="stat-number">
+                  {{ material()!.feedback_professors_count || 0 }}
+                </div>
+                <div class="stat-label">Profesori</div>
+              </div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-icon">👨‍🎓</div>
+              <div class="stat-info">
+                <div class="stat-number">
+                  {{ material()!.feedback_students_count || 0 }}
+                </div>
+                <div class="stat-label">Studenți</div>
+              </div>
+            </div>
+          </div>
+
+          @if (isProfessor()) {
+          <button
+            class="btn-feedback"
+            [class.active]="material()!.user_has_feedback"
+            (click)="toggleProfessorFeedback()"
+          >
+            <span class="btn-icon">💡</span>
+            <span class="btn-text">
+              {{
+                material()!.user_has_feedback ? 'M-a ajutat!' : 'Material util?'
+              }}
+            </span>
+          </button>
+          } @if (isStudent()) {
+          <button
+            class="btn-feedback"
+            [class.active]="material()!.user_has_feedback"
+            (click)="toggleStudentFeedback()"
+          >
+            <span class="btn-icon">⭐</span>
+            <span class="btn-text">
+              {{
+                material()!.user_has_feedback ? 'M-a ajutat!' : 'Material util?'
+              }}
+            </span>
+          </button>
+          } @if (isProfessor() && material()!.suggestions_count > 0) {
+          <div class="suggestions-link">
+            <button class="btn-suggestions" (click)="showSuggestions()">
+              📝 {{ material()!.suggestions_count }}
+              {{
+                material()!.suggestions_count === 1 ? 'Sugestie' : 'Sugestii'
+              }}
+            </button>
+          </div>
+          } @if (isProfessor() && canSuggest()) {
+          <button class="btn-add-suggestion" (click)="addSuggestion()">
+            ➕ Propune îmbunătățire
+          </button>
           }
         </div>
 
@@ -132,7 +199,27 @@ import { AuthService } from '../../services/auth.service';
         </div>
         }
       </div>
-      } @else {
+
+      <!-- Suggestions Modal -->
+      @if (showSuggestionsModal() && isProfessor()) {
+      <div class="suggestions-modal-overlay" (click)="hideSuggestionsModal()">
+        <div
+          class="suggestions-modal-container"
+          (click)="$event.stopPropagation()"
+        >
+          <button
+            class="btn-close-suggestions"
+            (click)="hideSuggestionsModal()"
+          >
+            ✕
+          </button>
+          <app-material-suggestions
+            [materialId]="material()!.id"
+            [materialOwnerId]="material()!.professor_id"
+          ></app-material-suggestions>
+        </div>
+      </div>
+      } } @else {
       <div class="error-state">
         <p>Materialul nu a fost găsit</p>
         <button class="btn btn-primary" (click)="goBack()">
@@ -271,6 +358,140 @@ import { AuthService } from '../../services/auth.service';
         color: #666;
         line-height: 1.6;
         margin-bottom: 2rem;
+      }
+
+      /* Feedback Section */
+      .feedback-section {
+        margin-bottom: 2rem;
+        padding: 1.5rem;
+        background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+        border-radius: 12px;
+        border: 2px solid #dee2e6;
+      }
+
+      .feedback-section h3 {
+        color: #5548d9;
+        margin-bottom: 1.5rem;
+        font-size: 1.5rem;
+      }
+
+      .feedback-stats {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+        gap: 1rem;
+        margin-bottom: 1.5rem;
+      }
+
+      .stat-card {
+        background: white;
+        padding: 1.5rem;
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+        transition: transform 0.3s;
+      }
+
+      .stat-card:hover {
+        transform: translateY(-2px);
+      }
+
+      .stat-icon {
+        font-size: 2.5rem;
+      }
+
+      .stat-info {
+        flex: 1;
+      }
+
+      .stat-number {
+        font-size: 2rem;
+        font-weight: bold;
+        color: #5548d9;
+        line-height: 1;
+      }
+
+      .stat-label {
+        font-size: 0.875rem;
+        color: #666;
+        margin-top: 0.25rem;
+      }
+
+      .btn-feedback {
+        width: 100%;
+        padding: 1rem 1.5rem;
+        background: white;
+        border: 3px solid #e0e0e0;
+        border-radius: 10px;
+        font-size: 1.1rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.75rem;
+        margin-bottom: 1rem;
+      }
+
+      .btn-feedback:hover {
+        background: #f8f9fa;
+        border-color: #5548d9;
+      }
+
+      .btn-feedback.active {
+        background: linear-gradient(135deg, #ffd54f 0%, #ffb300 100%);
+        border-color: #ff9800;
+        color: #fff;
+        box-shadow: 0 4px 12px rgba(255, 152, 0, 0.3);
+      }
+
+      .btn-icon {
+        font-size: 1.5rem;
+      }
+
+      .btn-text {
+        font-size: 1rem;
+      }
+
+      .suggestions-link {
+        margin-bottom: 1rem;
+      }
+
+      .btn-suggestions {
+        width: 100%;
+        padding: 0.75rem 1.5rem;
+        background: #e3f2fd;
+        border: 2px solid #1976d2;
+        border-radius: 8px;
+        color: #1976d2;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s;
+      }
+
+      .btn-suggestions:hover {
+        background: #1976d2;
+        color: white;
+      }
+
+      .btn-add-suggestion {
+        width: 100%;
+        padding: 0.75rem 1.5rem;
+        background: white;
+        border: 2px dashed #5548d9;
+        border-radius: 8px;
+        color: #5548d9;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s;
+      }
+
+      .btn-add-suggestion:hover {
+        background: #5548d9;
+        color: white;
+        border-style: solid;
       }
 
       /* Content Section */
@@ -483,6 +704,48 @@ import { AuthService } from '../../services/auth.service';
         margin-bottom: 2rem;
       }
 
+      /* Suggestions Modal */
+      .suggestions-modal-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.85);
+        z-index: 2000;
+        overflow-y: auto;
+      }
+
+      .suggestions-modal-container {
+        background: white;
+        min-height: 100vh;
+        position: relative;
+      }
+
+      .btn-close-suggestions {
+        position: fixed;
+        top: 1rem;
+        right: 1rem;
+        background: white;
+        border: none;
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        font-size: 1.5rem;
+        cursor: pointer;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+        z-index: 2001;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.3s;
+      }
+
+      .btn-close-suggestions:hover {
+        background: #f5f5f5;
+        transform: scale(1.1);
+      }
+
       @media (max-width: 768px) {
         .material-detail-container {
           padding: 1rem;
@@ -514,6 +777,7 @@ export class MaterialDetailComponent implements OnInit {
   loading = signal(true);
   selectedPdf = signal<string | null>(null);
   currentUser = signal<any>(null);
+  showSuggestionsModal = signal(false);
 
   constructor(
     private route: ActivatedRoute,
@@ -553,6 +817,80 @@ export class MaterialDetailComponent implements OnInit {
     if (!user || !mat) return false;
 
     return user.role === 'professor' && user.id === mat.professor_id;
+  }
+
+  isProfessor(): boolean {
+    return this.currentUser()?.role === 'professor';
+  }
+
+  isStudent(): boolean {
+    return this.currentUser()?.role === 'student';
+  }
+
+  canSuggest(): boolean {
+    // Professors can suggest on materials that are not theirs
+    const user = this.currentUser();
+    const mat = this.material();
+    if (!user || !mat) return false;
+
+    return user.role === 'professor' && user.id !== mat.professor_id;
+  }
+
+  toggleProfessorFeedback() {
+    const mat = this.material();
+    if (!mat) return;
+
+    this.materialService.toggleProfessorFeedback(mat.id).subscribe({
+      next: (response) => {
+        // Update material locally
+        this.material.set({
+          ...mat,
+          user_has_feedback: response.has_feedback,
+          feedback_professors_count: response.total_count,
+        });
+      },
+      error: (err) => {
+        console.error('Error toggling professor feedback:', err);
+        alert('Eroare la salvarea feedback-ului');
+      },
+    });
+  }
+
+  toggleStudentFeedback() {
+    const mat = this.material();
+    if (!mat) return;
+
+    this.materialService.toggleStudentFeedback(mat.id).subscribe({
+      next: (response) => {
+        // Update material locally
+        this.material.set({
+          ...mat,
+          user_has_feedback: response.has_feedback,
+          feedback_students_count: response.total_count,
+        });
+      },
+      error: (err) => {
+        console.error('Error toggling student feedback:', err);
+        alert('Eroare la salvarea feedback-ului');
+      },
+    });
+  }
+
+  showSuggestions() {
+    this.showSuggestionsModal.set(true);
+  }
+
+  hideSuggestionsModal() {
+    this.showSuggestionsModal.set(false);
+    // Reload material to get updated suggestions count
+    const mat = this.material();
+    if (mat) {
+      this.loadMaterial(mat.id);
+    }
+  }
+
+  addSuggestion() {
+    this.showSuggestionsModal.set(true);
   }
 
   getSafeHtml(html: string): SafeHtml {
