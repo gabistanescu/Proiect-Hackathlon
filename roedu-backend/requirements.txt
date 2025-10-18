@@ -7,7 +7,9 @@ python-dotenv==1.0.0
 pytest==7.4.3
 pytest-asyncio==0.21.1
 httpx==0.25.2
-passlib[bcrypt]==1.7.4
+        # Internal server error fix
+passlib==1.7.4
+bcrypt==4.0.1
 email-validator==2.1.0
 python-multipart==0.0.6
 python-jose[cryptography]==3.3.0

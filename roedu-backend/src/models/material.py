@@ -15,6 +15,7 @@ class Material(Base):
     id = Column(Integer, primary_key=True, index=True)
     title = Column(String(255), index=True, nullable=False)
     description = Column(Text)
+    content = Column(Text)  # Rich text HTML content
     file_paths = Column(Text)  # JSON string for multiple files
     profile_type = Column(SQLEnum(ProfileType))
     subject = Column(String(100), index=True)  # Materia

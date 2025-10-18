@@ -18,18 +18,39 @@ from src.schemas.user_schema import TokenData, UserCreate, LoginRequest
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 # OAuth2 scheme
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/login")
+        # Swagger Auth. fail fix
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/login/token")
 
 class AuthService:
     
     @staticmethod
+    def _truncate_password(password: str) -> str:
+        """Truncate password to 72 bytes for bcrypt compatibility"""
+        # Bcrypt has a maximum password length of 72 bytes
+        password_bytes = password.encode('utf-8')
+        if len(password_bytes) <= 72:
+            return password
+        
+        # Truncate to 72 bytes, ensuring we don't cut a multi-byte character
+        truncated = password_bytes[:72]
+        # Try to decode; if it fails due to incomplete character, remove bytes until valid
+        while len(truncated) > 0:
+            try:
+                return truncated.decode('utf-8')
+            except UnicodeDecodeError:
+                truncated = truncated[:-1]
+        return ""
+    
+    @staticmethod
     def verify_password(plain_password: str, hashed_password: str) -> bool:
         """Verify a password against its hash"""
+        plain_password = AuthService._truncate_password(plain_password)
         return pwd_context.verify(plain_password, hashed_password)
     
     @staticmethod
     def get_password_hash(password: str) -> str:
         """Hash a password"""
+        password = AuthService._truncate_password(password)
         return pwd_context.hash(password)
     
     @staticmethod
@@ -45,9 +66,12 @@ class AuthService:
         return encoded_jwt
     
     @staticmethod
-    def authenticate_user(email: str, password: str, db: Session) -> Optional[User]:
-        """Authenticate a user by email and password"""
-        user = db.query(User).filter(User.email == email).first()
+    def authenticate_user(email_or_username: str, password: str, db: Session) -> Optional[User]:
+        """Authenticate a user by email or username and password"""
+        # Try to find user by email or username
+        user = db.query(User).filter(
+            (User.email == email_or_username) | (User.username == email_or_username)
+        ).first()
         if not user:
             return None
         if not AuthService.verify_password(password, user.hashed_password):

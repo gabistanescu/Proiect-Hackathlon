@@ -186,17 +186,18 @@ UPLOAD_DIR=./uploads
 
 ### Authentication
 
-- `POST /api/v1/auth/register` - Register new user
-- `POST /api/v1/auth/login` - Login user
-- `GET /api/v1/auth/me` - Get current user
+- `POST /api/v1/auth/login` - Autentificare utilizator
+- `GET /api/v1/auth/me` - Informații despre utilizatorul curent
+- `GET /api/v1/auth/verify` - Verifică validitatea token-ului
 
 ### Administrators
 
-- `GET /api/v1/administrators` - List all administrators
-- `POST /api/v1/administrators` - Create administrator
-- `PUT /api/v1/administrators/{id}` - Update administrator
-- `DELETE /api/v1/administrators/{id}` - Delete administrator
-- `POST /api/v1/administrators/{id}/change-password` - Change password
+- `GET /api/v1/administrators` - Listează administratorii existenți
+- `POST /api/v1/administrators/users/administrators` - Creează un cont de administrator (doar admin)
+- `POST /api/v1/administrators/users/professors` - Creează un cont de profesor (doar admin)
+- `POST /api/v1/administrators/users/students` - Creează un cont de elev (doar admin)
+- `PUT /api/v1/administrators/{id}` - Actualizează datele unui administrator
+- `DELETE /api/v1/administrators/{id}` - Șterge un administrator
 
 ### Professors
 

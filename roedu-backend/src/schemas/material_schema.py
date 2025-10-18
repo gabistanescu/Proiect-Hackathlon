@@ -11,6 +11,7 @@ class ProfileType(str, Enum):
 class MaterialBase(BaseModel):
     title: str = Field(..., min_length=1, max_length=255)
     description: Optional[str] = None
+    content: Optional[str] = None  # Rich text HTML content
     profile_type: Optional[ProfileType] = None
     subject: str = Field(..., min_length=1, max_length=100)
     grade_level: Optional[int] = Field(None, ge=9, le=12)
@@ -23,6 +24,7 @@ class MaterialCreate(MaterialBase):
 class MaterialUpdate(BaseModel):
     title: Optional[str] = Field(None, min_length=1, max_length=255)
     description: Optional[str] = None
+    content: Optional[str] = None  # Rich text HTML content
     profile_type: Optional[ProfileType] = None
     subject: Optional[str] = Field(None, min_length=1, max_length=100)
     grade_level: Optional[int] = Field(None, ge=9, le=12)
@@ -32,6 +34,7 @@ class MaterialUpdate(BaseModel):
 
 class MaterialResponse(MaterialBase):
     id: int
+    content: Optional[str] = None  # Rich text HTML content
     file_paths: List[str]
     professor_id: int
     last_reviewed: Optional[datetime] = None
