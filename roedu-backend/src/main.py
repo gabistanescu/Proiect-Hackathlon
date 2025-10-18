@@ -15,13 +15,14 @@ app = FastAPI(
     debug=settings.DEBUG
 )
 
-# CORS middleware
+# CORS middleware - PERMITE TOATE ORIGINILE pentru development
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=settings.CORS_ORIGINS,
+    allow_origins=["*"],  # Permite toate originile
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
+    expose_headers=["*"],
 )
 
 # Create upload directory if it doesn't exist

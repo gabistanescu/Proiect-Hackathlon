@@ -110,6 +110,10 @@ def create_material(
     db.commit()
     db.refresh(material)
     
+    # Convert string fields to lists for response
+    material.tags = parse_tags(material.tags) if material.tags else []
+    material.file_paths = parse_json_field(material.file_paths) if material.file_paths else []
+    
     # Add counts for response
     material.feedback_professors_count = 0
     material.feedback_students_count = 0
@@ -174,9 +178,14 @@ def list_materials(
     # Get paginated results
     result = paginate_results(query, page, page_size)
     
-    # Add feedback counts and user feedback status for each material
+    # Convert SQLAlchemy objects to Pydantic models for proper serialization
     if 'items' in result:
+        materials_list = []
         for material in result['items']:
+            # Parse JSON/string fields to lists
+            material.tags = parse_tags(material.tags) if material.tags else []
+            material.file_paths = parse_json_field(material.file_paths) if material.file_paths else []
+            
             # Count feedback
             material.feedback_professors_count = db.query(func.count(MaterialFeedbackProfessor.id)).filter(
                 MaterialFeedbackProfessor.material_id == material.id
@@ -209,6 +218,12 @@ def list_materials(
                 material.suggestions_count = db.query(func.count(MaterialSuggestion.id)).filter(
                     MaterialSuggestion.material_id == material.id
                 ).scalar() or 0
+            
+            # Convert to Pydantic model for serialization
+            materials_list.append(MaterialResponse.model_validate(material))
+        
+        # Replace items with Pydantic models
+        result['items'] = materials_list
     
     return result
 
@@ -274,6 +289,10 @@ def get_material(
         ).first()
         material.user_has_feedback = user_feedback is not None
     
+    # Convert string fields to lists for response
+    material.tags = parse_tags(material.tags) if material.tags else []
+    material.file_paths = parse_json_field(material.file_paths) if material.file_paths else []
+    
     return material
 
 @router.put("/{material_id}", response_model=MaterialResponse)
@@ -311,6 +330,28 @@ def update_material(
     
     db.commit()
     db.refresh(material)
+    
+    # Convert string fields to lists for response
+    material.tags = parse_tags(material.tags) if material.tags else []
+    material.file_paths = parse_json_field(material.file_paths) if material.file_paths else []
+    
+    # Add feedback counts
+    from src.models.material_suggestions import MaterialFeedbackProfessor, MaterialFeedbackStudent, MaterialSuggestion
+    from sqlalchemy import func
+    
+    material.feedback_professors_count = db.query(func.count(MaterialFeedbackProfessor.id)).filter(
+        MaterialFeedbackProfessor.material_id == material.id
+    ).scalar() or 0
+    
+    material.feedback_students_count = db.query(func.count(MaterialFeedbackStudent.id)).filter(
+        MaterialFeedbackStudent.material_id == material.id
+    ).scalar() or 0
+    
+    material.suggestions_count = db.query(func.count(MaterialSuggestion.id)).filter(
+        MaterialSuggestion.material_id == material.id
+    ).scalar() or 0
+    
+    material.user_has_feedback = False
     
     return material
 
@@ -430,6 +471,28 @@ def mark_material_reviewed(
     material.last_reviewed = datetime.utcnow()
     db.commit()
     db.refresh(material)
+    
+    # Convert string fields to lists for response
+    material.tags = parse_tags(material.tags) if material.tags else []
+    material.file_paths = parse_json_field(material.file_paths) if material.file_paths else []
+    
+    # Add feedback counts
+    from src.models.material_suggestions import MaterialFeedbackProfessor, MaterialFeedbackStudent, MaterialSuggestion
+    from sqlalchemy import func
+    
+    material.feedback_professors_count = db.query(func.count(MaterialFeedbackProfessor.id)).filter(
+        MaterialFeedbackProfessor.material_id == material.id
+    ).scalar() or 0
+    
+    material.feedback_students_count = db.query(func.count(MaterialFeedbackStudent.id)).filter(
+        MaterialFeedbackStudent.material_id == material.id
+    ).scalar() or 0
+    
+    material.suggestions_count = db.query(func.count(MaterialSuggestion.id)).filter(
+        MaterialSuggestion.material_id == material.id
+    ).scalar() or 0
+    
+    material.user_has_feedback = False
     
     return material
 

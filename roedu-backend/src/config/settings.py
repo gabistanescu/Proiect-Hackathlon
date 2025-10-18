@@ -30,7 +30,12 @@ class Settings:
     OPENAI_API_KEY: str = os.getenv("OPENAI_API_KEY", "")
     
     # CORS
-    CORS_ORIGINS: list = os.getenv("CORS_ORIGINS", "http://localhost:4200,http://localhost:3000").split(",")
+    CORS_ORIGINS: list = [
+        "http://localhost:4200",
+        "http://localhost:3000",
+        "http://127.0.0.1:4200",
+        "http://127.0.0.1:3000",
+    ]
     
     # File Upload
     MAX_FILE_SIZE: int = int(os.getenv("MAX_FILE_SIZE", "10485760"))  # 10MB
