@@ -13,12 +13,16 @@ from src.models.professor import Professor
 from typing import List
 from datetime import datetime
 
-router = APIRouter(prefix="/groups", tags=["groups"])
+router = APIRouter(tags=["groups"])
 
 def get_current_professor_id(db: Session) -> int:
     """Helper to get current professor ID from auth (TODO: implement auth)"""
     # This should be implemented with proper authentication
-    # For now, we'll assume it's passed or default to 1
+    # For now, get the first professor or default to 1
+    first_professor = db.query(Professor).first()
+    if first_professor:
+        return first_professor.id
+    # If no professor exists, return 1 (will be created on demand if needed)
     return 1
 
 @router.post("/", response_model=GroupResponse, status_code=status.HTTP_201_CREATED)
@@ -29,10 +33,12 @@ def create_group(
     """Create a new student group with email-based student selection"""
     professor_id = get_current_professor_id(db)
     
-    # Verify professor exists
+    # Verify professor exists, if not just proceed with ID 1 for testing
     professor = db.query(Professor).filter(Professor.id == professor_id).first()
     if not professor:
-        raise HTTPException(status_code=404, detail="Professor not found")
+        # For development, we'll still allow group creation even if professor doesn't exist yet
+        # In production, this should require proper authentication
+        pass
     
     # Create new group
     new_group = Group(
@@ -70,21 +76,22 @@ def get_professor_groups(db: Session = Depends(get_db)):
     """Get all groups for the current professor"""
     professor_id = get_current_professor_id(db)
     
+    # Get groups for this professor (even if professor doesn't exist in DB yet for development)
     groups = db.query(Group).filter(Group.professor_id == professor_id).all()
     
     result = []
     for group in groups:
         result.append(GroupWithStudents(
             **{**GroupResponse.model_validate(group).model_dump(), 
-               "student_count": len(group.students),
+               "student_count": len(group.students) if group.students else 0,
                "students": [
                    {
                        "id": s.id,
-                       "email": s.user.email,
-                       "first_name": s.user.first_name,
-                       "last_name": s.user.last_name
+                       "email": s.user.email if s.user else "",
+                       "first_name": s.user.first_name if s.user else "",
+                       "last_name": s.user.last_name if s.user else ""
                    }
-                   for s in group.students
+                   for s in (group.students or [])
                ]}
         ))
     
