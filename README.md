@@ -20,7 +20,7 @@ RoEdu este o platformă educațională modernă destinată școlilor din Români
 ```
 👨‍💼 Administrator: admin@roedu.ro / Admin123!
 👨‍🏫 Profesori: ana.popescu@roedu.ro / Prof1234! (și alți 3)
-👨‍🎓 Elevi: student01@roedu.ro / Stud1234! (10 elevi total)
+👨‍🎓 Elevi: andrei.pop@roedu.ro / Stud1234! (10 elevi total)
 ```
 
 **Vezi lista completă**: `UTILIZATORI_INITIALIZATI.md`

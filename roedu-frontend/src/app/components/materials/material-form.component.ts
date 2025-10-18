@@ -16,7 +16,11 @@ import {
 } from '@angular/forms';
 import { Router, ActivatedRoute } from '@angular/router';
 import { MaterialService } from '../../services/material.service';
-import { Material, MaterialCreate } from '../../models/material.model';
+import {
+  Material,
+  MaterialCreate,
+  VisibilityType,
+} from '../../models/material.model';
 import { ProfileType } from '../../models/user.model';
 
 @Component({
@@ -51,7 +55,14 @@ import { ProfileType } from '../../models/user.model';
               materialForm.get('title')?.touched
             "
           />
-          <span *ngIf="materialForm.get('title')?.invalid && materialForm.get('title')?.touched" class="error-message">Titlul este obligatoriu</span>
+          <span
+            *ngIf="
+              materialForm.get('title')?.invalid &&
+              materialForm.get('title')?.touched
+            "
+            class="error-message"
+            >Titlul este obligatoriu</span
+          >
         </div>
 
         <!-- Description -->
@@ -142,7 +153,14 @@ import { ProfileType } from '../../models/user.model';
               materialForm.get('subject')?.touched
             "
           />
-          <span *ngIf="materialForm.get('subject')?.invalid && materialForm.get('subject')?.touched" class="error-message">Materia este obligatorie</span>
+          <span
+            *ngIf="
+              materialForm.get('subject')?.invalid &&
+              materialForm.get('subject')?.touched
+            "
+            class="error-message"
+            >Materia este obligatorie</span
+          >
         </div>
 
         <div class="form-row">
@@ -210,7 +228,10 @@ import { ProfileType } from '../../models/user.model';
               <span class="icon">📎</span> Selectează Fișiere
             </button>
 
-            <div *ngIf="uploadProgress() > 0 && uploadProgress() < 100" class="upload-progress">
+            <div
+              *ngIf="uploadProgress() > 0 && uploadProgress() < 100"
+              class="upload-progress"
+            >
               <div
                 class="progress-bar"
                 [style.width.%]="uploadProgress()"
@@ -235,9 +256,28 @@ import { ProfileType } from '../../models/user.model';
 
         <!-- Visibility -->
         <div class="form-group">
+          <label for="visibility">Vizibilitate *</label>
+          <select
+            id="visibility"
+            formControlName="visibility"
+            class="form-control"
+          >
+            <option value="public">🌐 Public - vizibil pentru toți</option>
+            <option value="professors_only">
+              👨‍🏫 Doar profesori - vizibil pentru profesori
+            </option>
+            <option value="private">🔒 Privat - doar pentru mine</option>
+          </select>
+          <small class="help-text">
+            Alege cine poate vedea acest material
+          </small>
+        </div>
+
+        <!-- Shared (for backwards compatibility) -->
+        <div class="form-group">
           <label class="checkbox-label">
             <input type="checkbox" formControlName="is_shared" />
-            <span>Material public (vizibil pentru toți utilizatorii)</span>
+            <span>Material partajat (inclusiv în biblioteca publică)</span>
           </label>
         </div>
 
@@ -257,7 +297,9 @@ import { ProfileType } from '../../models/user.model';
             [disabled]="materialForm.invalid || isSubmitting()"
           >
             <span *ngIf="isSubmitting()">Se salvează...</span>
-            <span *ngIf="!isSubmitting()">{{ isEditMode() ? 'Salvează Modificările' : 'Creează Material' }}</span>
+            <span *ngIf="!isSubmitting()">{{
+              isEditMode() ? 'Salvează Modificările' : 'Creează Material'
+            }}</span>
           </button>
         </div>
       </form>
@@ -347,6 +389,13 @@ import { ProfileType } from '../../models/user.model';
         font-size: 0.875rem;
         margin-top: 0.25rem;
         display: block;
+      }
+
+      .help-text {
+        display: block;
+        color: #666;
+        font-size: 0.875rem;
+        margin-top: 0.25rem;
       }
 
       /* Rich Text Editor */
@@ -586,6 +635,7 @@ export class MaterialFormComponent implements OnInit, AfterViewInit {
       profile_type: [''],
       grade_level: [''],
       tagsInput: [''],
+      visibility: ['public', Validators.required],
       is_shared: [true],
     });
   }
@@ -616,10 +666,11 @@ export class MaterialFormComponent implements OnInit, AfterViewInit {
           profile_type: material.profile_type || '',
           grade_level: material.grade_level || '',
           tagsInput: material.tags?.join(', ') || '',
+          visibility: material.visibility || 'public',
           is_shared: material.is_shared,
         });
 
-        this.editorContent.set(material.content || '')
+        this.editorContent.set(material.content || '');
 
         // Set editor content manually after a short delay to ensure DOM is ready
         setTimeout(() => {
@@ -723,6 +774,7 @@ export class MaterialFormComponent implements OnInit, AfterViewInit {
       profile_type: formValue.profile_type || undefined,
       grade_level: formValue.grade_level ? +formValue.grade_level : undefined,
       tags: tags,
+      visibility: formValue.visibility as VisibilityType,
       is_shared: formValue.is_shared,
       file_paths: this.uploadedFiles().map((f) => f.path),
     };

@@ -43,13 +43,15 @@ import { AuthService } from '../../services/auth.service';
             />
           </div>
 
-          <button
-            type="submit"
-            class="btn btn-primary btn-lg"
-            [disabled]="loading"
-          >
-            {{ loading ? 'Conectare...' : 'Conectare' }}
-          </button>
+          <div class="button-container">
+            <button
+              type="submit"
+              class="btn btn-primary btn-lg"
+              [disabled]="loading"
+            >
+              {{ loading ? 'Conectare...' : 'Conectare' }}
+            </button>
+          </div>
         </form>
 
         <div class="auth-footer">
@@ -100,6 +102,12 @@ import { AuthService } from '../../services/auth.service';
 
       .auth-form {
         margin-bottom: 2rem;
+      }
+
+      .button-container {
+        display: flex;
+        justify-content: center;
+        margin-top: 1.5rem;
       }
 
       .auth-footer {

@@ -4,6 +4,8 @@ import {
   Material,
   MaterialCreate,
   MaterialSearchParams,
+  FeedbackStats,
+  FeedbackToggleResponse,
 } from '../models/material.model';
 import { ApiService } from './api.service';
 
@@ -80,5 +82,38 @@ export class MaterialService {
       file_path: string;
       message: string;
     }>('/materials/upload', formData, true); // true = skip Content-Type header
+  }
+
+  /**
+   * Toggle professor feedback for a material
+   */
+  toggleProfessorFeedback(
+    materialId: number
+  ): Observable<FeedbackToggleResponse> {
+    return this.apiService.post<FeedbackToggleResponse>(
+      `/materials/${materialId}/feedback/professor`,
+      {}
+    );
+  }
+
+  /**
+   * Toggle student feedback for a material
+   */
+  toggleStudentFeedback(
+    materialId: number
+  ): Observable<FeedbackToggleResponse> {
+    return this.apiService.post<FeedbackToggleResponse>(
+      `/materials/${materialId}/feedback/student`,
+      {}
+    );
+  }
+
+  /**
+   * Get feedback statistics for a material
+   */
+  getFeedbackStats(materialId: number): Observable<FeedbackStats> {
+    return this.apiService.get<FeedbackStats>(
+      `/materials/${materialId}/feedback`
+    );
   }
 }
