@@ -1,4 +1,4 @@
-#4 🎓 RoEdu - Platformă Educațională pentru Școlile din România
+# 🎓 RoEdu - Platformă Educațională pentru Școlile din România
 
 ## 📋 Despre Proiect
 
@@ -19,7 +19,7 @@ RoEdu este o platformă educațională modernă destinată școlilor din Români
 
 ```
 👨‍💼 Administrator: admin@roedu.ro / Admin123!
-👨‍🏫 Profesori: prof.ana@roedu.ro / Prof1234! (și alți 3)
+👨‍🏫 Profesori: ana.popescu@roedu.ro / Prof1234! (și alți 3)
 👨‍🎓 Elevi: student01@roedu.ro / Stud1234! (10 elevi total)
 ```
 

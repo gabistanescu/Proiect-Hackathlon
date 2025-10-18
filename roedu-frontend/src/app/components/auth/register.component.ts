@@ -50,7 +50,7 @@ import { RouterModule } from '@angular/router';
             <p>Ai primit deja credențiale?</p>
             <a routerLink="/login" class="btn-login"> Conectează-te aici → </a>
           </div>
-        </div>
+        </div>  
       </div>
     </div>
   `,

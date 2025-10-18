@@ -1,6 +1,7 @@
-import { Component } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterModule } from '@angular/router';
+import { RouterModule, Router } from '@angular/router';
+import { AuthService } from '../../services/auth.service';
 
 @Component({
   selector: 'app-home',
@@ -10,73 +11,79 @@ import { RouterModule } from '@angular/router';
     <div class="home-container">
       <div class="hero-section">
         <div class="hero-content">
-          <h1>Welcome to RoEdu</h1>
-          <p class="hero-subtitle">Educational Platform for Romanian Schools</p>
+          <h1>Bun venit pe RoEdu</h1>
+          <p class="hero-subtitle">Platformă educațională pentru școlile din România</p>
           <p class="hero-description">
-            Access standardized educational materials, take interactive quizzes,
-            and collaborate with teachers and students across Romania.
+            Accesează materiale educaționale standardizate, susține teste interactive
+            și colaborează cu profesori și elevi din întreaga Românie.  
           </p>
           <div class="hero-buttons">
             <a routerLink="/materials" class="btn btn-primary"
-              >Browse Materials</a
+              >Caută materiale</a
             >
-            <a routerLink="/quizzes" class="btn btn-secondary">Take Quizzes</a>
+            <!-- Not logged in: show alert -->
+            <button *ngIf="!isLoggedIn" (click)="handleQuizClick()" class="btn btn-secondary">Susține teste</button>
+            <!-- Logged in as student: allow entry, keep text -->
+            <a *ngIf="isLoggedIn && userRole === 'student'" routerLink="/quizzes" class="btn btn-secondary">Susține teste</a>
+            <!-- Logged in as professor: allow entry, change text -->
+            <a *ngIf="isLoggedIn && userRole === 'professor'" routerLink="/quizzes" class="btn btn-secondary">Creează teste</a>
+            <!-- Logged in as admin: hide button (no element shown) -->
           </div>
         </div>
-        <div class="hero-image">
+        <div class="hero-image">  
           <div class="placeholder-image">
             <span class="icon">📚</span>
-            <p>Learning Platform</p>
+            <p>Platformă de învățare</p>
           </div>
         </div>
       </div>
 
       <div class="features-section">
         <div class="container">
-          <h2>Platform Features</h2>
+          <h2>Funcționalități ale platformei</h2>
           <div class="features-grid">
             <div class="feature-card">
               <div class="feature-icon">📖</div>
-              <h3>Educational Materials</h3>
+              <h3>Materiale educaționale</h3>
               <p>
-                Access standardized materials organized by profile, subject, and
-                grade level.
+                Accesează materiale educaționale standardizate, organizate pe profil,
+                disciplină și clasă.
               </p>
             </div>
             <div class="feature-card">
               <div class="feature-icon">📝</div>
-              <h3>Interactive Quizzes</h3>
+              <h3>Teste interactive</h3>
               <p>
-                Take quizzes with multiple question types and get instant
-                feedback.
+                Susține teste cu diferite tipuri de întrebări și
+                primește feedback instant.
               </p>
             </div>
             <div class="feature-card">
               <div class="feature-icon">💬</div>
-              <h3>Community Feedback</h3>
+              <h3>Feedback din comunitate</h3>
               <p>
-                Ask questions, provide feedback, and collaborate with your
-                peers.
+                Adresează întrebări, oferă feedback și colaborează
+                cu colegii tăi.
               </p>
             </div>
             <div class="feature-card">
               <div class="feature-icon">🎓</div>
-              <h3>Role-Based Access</h3>
+              <h3>Acces bazat pe rol</h3>
               <p>
-                Tailored experiences for administrators, professors, and
-                students.
+                O experiență personalizată pentru administratori, profesori
+                 și elevi.
               </p>
             </div>
           </div>
         </div>
       </div>
 
-      <div class="cta-section">
+      <div class="cta-section" *ngIf="!isLoggedIn">
         <div class="container">
-          <h2>Ready to Start Learning?</h2>
+          <h2>Pregătit să înveți?</h2>
           <p>
-            Join thousands of Romanian students and teachers on our educational
-            platform.
+            Alătură-te milioanelor de elevi și profesori români pe platforma
+            noastră educațională.
           </p>
           <div class="cta-buttons">
             <a routerLink="/register" class="btn btn-primary btn-lg"
@@ -97,7 +104,7 @@ import { RouterModule } from '@angular/router';
       }
 
       .hero-section {
-        background: linear-gradient(135deg, #4f46e5 0%, #4338ca 100%);
+        background: linear-gradient(135deg, #a3f04cff 0%, #5653fcff 100%);
         color: white;
         padding: 4rem 1rem;
         display: grid;
@@ -114,12 +121,14 @@ import { RouterModule } from '@angular/router';
       }
 
       .hero-subtitle {
+        color: #000000ff;
         font-size: 1.25rem;
         margin-bottom: 1.5rem;
         opacity: 0.9;
       }
 
       .hero-description {
+        color: #242424ff;
         font-size: 1.1rem;
         line-height: 1.6;
         margin-bottom: 2rem;
@@ -269,4 +278,28 @@ import { RouterModule } from '@angular/router';
     `,
   ],
 })
-export class HomeComponent {}
+export class HomeComponent implements OnInit {
+  isLoggedIn: boolean = false;
+  userRole: string | null = null;
+
+  constructor(
+    private authService: AuthService,
+    private router: Router
+  ) {}
+
+  ngOnInit(): void {
+    // Subscribe to login status
+    this.authService.isLoggedIn$.subscribe(loggedIn => {
+      this.isLoggedIn = loggedIn;
+    });
+
+    // Subscribe to current user to get role
+    this.authService.currentUser$.subscribe(user => {
+      this.userRole = user?.role || null;
+    });
+  }
+
+  handleQuizClick(): void {
+    alert('Trebuie să fii autentificat pentru a accesa testele. Te rugăm să te conectezi sau să te înregistrezi.');
+  }
+}

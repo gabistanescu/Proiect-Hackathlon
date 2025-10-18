@@ -12,8 +12,8 @@ import { AuthService } from '../../services/auth.service';
     <div class="auth-container">
       <div class="auth-card">
         <div class="auth-header">
-          <h1>Sign In</h1>
-          <p>Welcome back to RoEdu</p>
+          <h1>Conectează-te</h1>
+          <p>Bine ai revenit pe RoEdu</p>
         </div>
 
         <form (ngSubmit)="onSubmit()" class="auth-form">
@@ -25,7 +25,7 @@ import { AuthService } from '../../services/auth.service';
               [(ngModel)]="email"
               name="email"
               class="form-control"
-              placeholder="your.email@school.ro"
+              placeholder="!!!!!!!!!!!!@school.ro"
               required
             />
           </div>
