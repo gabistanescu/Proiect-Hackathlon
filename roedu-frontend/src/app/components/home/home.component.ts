@@ -164,6 +164,7 @@ import { AuthService } from '../../services/auth.service';
         font-size: 1.25rem;
         margin: 0;
         opacity: 0.9;
+        color: white;
       }
 
       .features-section {
