@@ -114,6 +114,20 @@ export const routes: Routes = [
             (m) => m.QuizTakeComponent
           ),
       },
+      {
+        path: 'results/:id',
+        loadComponent: () =>
+          import('./components/quizzes/quiz-results.component').then(
+            (m) => m.QuizResultsComponent
+          ),
+      },
+      {
+        path: ':id/results',
+        loadComponent: () =>
+          import('./components/quizzes/quiz-results-list.component').then(
+            (m) => m.QuizResultsListComponent
+          ),
+      },
     ],
   },
   {

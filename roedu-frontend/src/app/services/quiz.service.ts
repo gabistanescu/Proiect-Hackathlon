@@ -18,6 +18,10 @@ export class QuizService {
     return this.apiService.get<Quiz>(`/quizzes/${id}`);
   }
 
+  getQuiz(id: number): Observable<Quiz> {
+    return this.apiService.get<Quiz>(`/quizzes/${id}`);
+  }
+
   createQuiz(quiz: QuizCreate): Observable<Quiz> {
     return this.apiService.post<Quiz>('/quizzes', quiz);
   }
@@ -40,6 +44,14 @@ export class QuizService {
 
   getResults(id: number): Observable<QuizAttempt[]> {
     return this.apiService.get<QuizAttempt[]>(`/quizzes/${id}/results`);
+  }
+
+  getAttemptResult(attemptId: number): Observable<any> {
+    return this.apiService.get<any>(`/quizzes/attempts/${attemptId}`);
+  }
+
+  getQuizAttempts(quizId: number): Observable<any[]> {
+    return this.apiService.get<any[]>(`/quizzes/${quizId}/attempts`);
   }
 
   generateAIQuiz(materialId: number, topic: string): Observable<Quiz> {

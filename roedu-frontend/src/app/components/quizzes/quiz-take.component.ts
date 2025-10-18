@@ -635,7 +635,7 @@ export class QuizTakeComponent implements OnInit, OnDestroy {
 
     this.quizService.submitAttempt(this.quiz.id, answersDict).subscribe({
       next: (attempt) => {
-        this.router.navigate(['/quiz-results', attempt.id]);
+        this.router.navigate(['/quizzes/results', attempt.id]);
       },
       error: () => {
         this.errorMessage = 'Nu s-au putut trimite răspunsurile. Te rog încearcă din nou.';

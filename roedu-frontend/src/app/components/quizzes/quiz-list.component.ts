@@ -74,6 +74,9 @@ import { Quiz, QuestionType } from '../../models/quiz.model';
               <button *ngIf="userRole === 'professor'" (click)="editQuiz(quiz.id)" class="btn btn-warning">
                 ✏️ Editeaza
               </button>
+              <button *ngIf="userRole === 'professor'" (click)="viewResults(quiz.id)" class="btn btn-info">
+                📊 Rezultate
+              </button>
               <button *ngIf="userRole === 'professor'" (click)="deleteQuiz(quiz.id)" class="btn btn-danger">
                 🗑️ Sterge
               </button>
@@ -145,6 +148,15 @@ import { Quiz, QuestionType } from '../../models/quiz.model';
 
     .btn-warning:hover {
       background: #e68900;
+    }
+
+    .btn-info {
+      background: #00bcd4;
+      color: white;
+    }
+
+    .btn-info:hover {
+      background: #00acc1;
     }
 
     .btn-danger {
@@ -367,6 +379,10 @@ export class QuizListComponent implements OnInit {
 
   takeQuiz(quizId: number): void {
     this.router.navigate([`/quizzes/${quizId}/take`]);
+  }
+
+  viewResults(quizId: number): void {
+    this.router.navigate([`/quizzes/${quizId}/results`]);
   }
 
   deleteQuiz(quizId: number): void {
