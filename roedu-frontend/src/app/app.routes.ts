@@ -1,5 +1,6 @@
 import { Routes } from '@angular/router';
 import { AuthGuard } from './guards/auth.guard';
+import { GuestAccessGuard } from './guards/guest-access.guard';
 
 export const routes: Routes = [
   {
@@ -25,6 +26,7 @@ export const routes: Routes = [
   },
   {
     path: 'how-to-access',
+    canActivate: [GuestAccessGuard],
     loadComponent: () =>
       import('./components/access/access.component').then((m) => m.AccessComponent),
   },

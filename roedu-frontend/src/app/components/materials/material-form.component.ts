@@ -790,10 +790,12 @@ export class MaterialFormComponent implements OnInit, AfterViewInit {
       },
       error: (err) => {
         this.isSubmitting.set(false);
+        const errorDetail = err.error?.detail || 'Eroare necunoscută';
+        const statusCode = err.status || 'Fără cod de status';
         this.errorMessage.set(
-          err.error?.detail || 'Eroare la salvarea materialului'
+          `Eroare la salvarea materialului: ${errorDetail} (Cod: ${statusCode})`
         );
-        console.error(err);
+        console.error('Detalii eroare:', err);
       },
     });
   }

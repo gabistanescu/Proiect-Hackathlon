@@ -24,19 +24,13 @@
              class="nav-link">
             Despre Noi
           </a>
-          <a routerLink="/how-to-access"
-             routerLinkActive="active"
-             [routerLinkActiveOptions]="{ exact: true }"
-             class="nav-link">
-            Cum obții Accesul
-          </a>
+          
           <a routerLink="/contact"
              routerLinkActive="active"
              [routerLinkActiveOptions]="{ exact: true }"
              class="nav-link">
             Contact
           </a>
-
 
           <ng-container *ngIf="isLoggedIn">
             <a routerLink="/materials"
@@ -72,6 +66,12 @@
             </div>
           </ng-container>
           <ng-container *ngIf="!isLoggedIn">
+            <a routerLink="/how-to-access"
+               routerLinkActive="active"
+               [routerLinkActiveOptions]="{ exact: true }"
+               class="nav-link">
+              Cum obții Accesul
+            </a>
             <a routerLink="/login" class="login-btn">Conectare</a>
             <a routerLink="/register" class="signup-btn">Înregistrare</a>
           </ng-container>
