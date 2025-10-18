@@ -7,7 +7,7 @@ import json
 from src.config.database import get_db
 from src.services.auth_service import get_current_user
 from src.models.user import User
-from src.models.quiz import Quiz, Question, QuizAttempt
+from src.models.quiz import Quiz, Question, QuizAttempt, QuestionType
 from src.models.professor import Professor
 from src.schemas.quiz_schema import (
     QuizCreate, QuizUpdate, QuizResponse,
@@ -17,6 +17,36 @@ from src.schemas.quiz_schema import (
 )
 
 router = APIRouter()
+
+def score_free_text_answer(student_answer: str, evaluation_criteria: str, correct_answers: List[str]) -> tuple[float, bool]:
+    """
+    Score a free text answer based on keyword matching or exact match.
+    Returns (score: 0 or 1, is_correct: bool)
+    """
+    if not student_answer or not student_answer.strip():
+        return (0.0, False)
+    
+    student_answer_lower = student_answer.lower().strip()
+    
+    # First try exact match with any correct answer
+    for correct in correct_answers:
+        if student_answer_lower == correct.lower():
+            return (1.0, True)
+    
+    # If evaluation_criteria provided, check for keyword matching
+    if evaluation_criteria:
+        try:
+            criteria = json.loads(evaluation_criteria)
+            if isinstance(criteria, list):
+                # Check if any keywords are present
+                keywords = [kw.lower() for kw in criteria]
+                for keyword in keywords:
+                    if keyword in student_answer_lower:
+                        return (0.5, False)  # Partial credit for keyword match
+        except json.JSONDecodeError:
+            pass
+    
+    return (0.0, False)
 
 @router.get("/", response_model=List[QuizResponse])
 def list_quizzes(
@@ -97,12 +127,16 @@ def create_quiz(
     
     # Add questions
     for idx, question_data in enumerate(quiz_data.questions):
+        question_dict = question_data.model_dump()
+        options = question_dict.pop('options', None)
+        correct_answers = question_dict.pop('correct_answers', [])
+        
         question = Question(
-            **question_data.model_dump(),
+            **question_dict,
             quiz_id=new_quiz.id,
             order_index=idx,
-            options=json.dumps(question_data.options),
-            correct_answers=json.dumps(question_data.correct_answers)
+            options=json.dumps(options) if options else None,
+            correct_answers=json.dumps(correct_answers)
         )
         db.add(question)
     
@@ -218,6 +252,7 @@ def copy_quiz(
             question_type=original_question.question_type,
             options=original_question.options,
             correct_answers=original_question.correct_answers,
+            evaluation_criteria=original_question.evaluation_criteria,
             points=original_question.points,
             order_index=original_question.order_index
         )
@@ -236,6 +271,7 @@ def submit_quiz_attempt(
 ):
     """
     Submit a quiz attempt (students only)
+    Handles both grila (multiple/single choice) and libre (free text) questions
     """
     if current_user.role.value != "student":
         raise HTTPException(
@@ -258,18 +294,32 @@ def submit_quiz_attempt(
         max_score += question.points
         
         # Get student's answers for this question
-        student_answers = attempt_data.answers.get(question.id, [])
+        student_answers = attempt_data.answers.get(str(question.id), [])
+        if isinstance(student_answers, str):
+            student_answers = [student_answers]
+        
         correct_answers = json.loads(question.correct_answers)
         
-        # Check if answer is correct
-        if set(student_answers) == set(correct_answers):
-            total_score += question.points
+        # Score based on question type
+        if question.question_type == QuestionType.FREE_TEXT:
+            # For free text, use keyword matching
+            student_text = student_answers[0] if student_answers else ""
+            score, _ = score_free_text_answer(
+                student_text,
+                question.evaluation_criteria or "",
+                correct_answers
+            )
+            total_score += score * question.points
+        else:
+            # For grila (SINGLE_CHOICE, MULTIPLE_CHOICE), exact match
+            if set(student_answers) == set(correct_answers):
+                total_score += question.points
     
     # Create attempt
     new_attempt = QuizAttempt(
         quiz_id=quiz_id,
         student_id=current_user.id,
-        answers=json.dumps(attempt_data.answers),
+        answers=json.dumps({str(k): v for k, v in attempt_data.answers.items()}),
         score=total_score,
         max_score=max_score,
         completed_at=datetime.utcnow()
@@ -347,15 +397,29 @@ def get_quiz_result(
         
         # Calculate score for this question
         student_ans = student_answers.get(str(question.id), [])
-        if set(student_ans) == set(correct_answers[question.id]):
-            question_scores[question.id] = question.points
+        if isinstance(student_ans, str):
+            student_ans = [student_ans]
+        
+        # Score based on question type
+        if question.question_type == QuestionType.FREE_TEXT:
+            student_text = student_ans[0] if student_ans else ""
+            score, _ = score_free_text_answer(
+                student_text,
+                question.evaluation_criteria or "",
+                correct_answers[question.id]
+            )
+            question_scores[question.id] = score * question.points
         else:
-            question_scores[question.id] = 0.0
+            # Grila scoring
+            if set(student_ans) == set(correct_answers[question.id]):
+                question_scores[question.id] = question.points
+            else:
+                question_scores[question.id] = 0.0
     
     return {
         "attempt": attempt,
         "correct_answers": correct_answers,
-        "student_answers": {int(k): v for k, v in student_answers.items()},
+        "student_answers": {int(k) if k.isdigit() else k: v for k, v in student_answers.items()},
         "question_scores": question_scores
     }
 

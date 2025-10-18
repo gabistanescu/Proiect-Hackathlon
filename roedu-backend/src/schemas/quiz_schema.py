@@ -4,9 +4,9 @@ from datetime import datetime
 from enum import Enum
 
 class QuestionType(str, Enum):
-    SINGLE_CHOICE = "single"
-    MULTIPLE_CHOICE = "multiple"
-    TRUE_FALSE = "true_false"
+    SINGLE_CHOICE = "single_choice"
+    MULTIPLE_CHOICE = "multiple_choice"
+    FREE_TEXT = "free_text"
 
 class ProfileType(str, Enum):
     REAL = "real"
@@ -17,10 +17,11 @@ class ProfileType(str, Enum):
 class QuestionBase(BaseModel):
     question_text: str
     question_type: QuestionType
-    options: List[str]
+    options: Optional[List[str]] = None  # Required for grila, None for free_text
     correct_answers: List[str]  # Can be multiple for MULTIPLE_CHOICE
     points: float = 1.0
     order_index: Optional[int] = None
+    evaluation_criteria: Optional[str] = None  # For FREE_TEXT: keywords/examples for manual evaluation
 
 class QuestionCreate(QuestionBase):
     pass
@@ -32,6 +33,7 @@ class QuestionUpdate(BaseModel):
     correct_answers: Optional[List[str]] = None
     points: Optional[float] = None
     order_index: Optional[int] = None
+    evaluation_criteria: Optional[str] = None
 
 class QuestionResponse(QuestionBase):
     id: int
@@ -79,7 +81,7 @@ class QuizCopyRequest(BaseModel):
 # Quiz Attempt Schemas
 class QuizAttemptCreate(BaseModel):
     quiz_id: int
-    answers: Dict[int, List[str]]  # question_id -> selected answers
+    answers: Dict[int, List[str]]  # question_id -> selected answers or free text
 
 class QuizAttemptResponse(BaseModel):
     id: int

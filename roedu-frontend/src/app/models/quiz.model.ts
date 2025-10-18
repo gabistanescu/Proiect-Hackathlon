@@ -1,8 +1,7 @@
 export enum QuestionType {
   SINGLE_CHOICE = 'single_choice',
   MULTIPLE_CHOICE = 'multiple_choice',
-  TRUE_FALSE = 'true_false',
-  ESSAY = 'essay'
+  FREE_TEXT = 'free_text'
 }
 
 export interface Question {
@@ -10,16 +9,19 @@ export interface Question {
   quiz_id: number;
   question_text: string;
   question_type: QuestionType;
-  options?: string[];
+  options?: string[];  // For SINGLE_CHOICE and MULTIPLE_CHOICE
   correct_answer?: string | string[];
   explanation?: string;
   order: number;
+  evaluation_criteria?: string;  // For FREE_TEXT: keywords/examples for evaluation
 }
 
 export interface Quiz {
   id: number;
   title: string;
   description?: string;
+  subject?: string;
+  grade_level?: number;
   professor_id: number;
   material_id?: number;
   questions: Question[];
@@ -33,6 +35,8 @@ export interface Quiz {
 export interface QuizCreate {
   title: string;
   description?: string;
+  subject?: string;
+  grade_level?: number;
   material_id?: number;
   questions: QuestionCreate[];
   is_published: boolean;
@@ -43,10 +47,12 @@ export interface QuizCreate {
 export interface QuestionCreate {
   question_text: string;
   question_type: QuestionType;
-  options?: string[];
+  options?: string[];  // For grila questions
   correct_answer?: string | string[];
   explanation?: string;
   order: number;
+  evaluation_criteria?: string;  // For FREE_TEXT questions
+  points?: number;
 }
 
 export interface QuizAttempt {

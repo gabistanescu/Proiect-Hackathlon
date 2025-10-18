@@ -5,9 +5,9 @@ from datetime import datetime
 import enum
 
 class QuestionType(str, enum.Enum):
-    SINGLE_CHOICE = "single"
-    MULTIPLE_CHOICE = "multiple"
-    TRUE_FALSE = "true_false"
+    SINGLE_CHOICE = "single_choice"
+    MULTIPLE_CHOICE = "multiple_choice"
+    FREE_TEXT = "free_text"
 
 class Quiz(Base):
     __tablename__ = 'quizzes'
@@ -41,10 +41,12 @@ class Question(Base):
     quiz_id = Column(Integer, ForeignKey('quizzes.id'), nullable=False)
     question_text = Column(Text, nullable=False)
     question_type = Column(SQLEnum(QuestionType), nullable=False)
-    options = Column(Text, nullable=False)  # JSON string of answer options
-    correct_answers = Column(Text, nullable=False)  # JSON string for multiple correct answers
+    options = Column(Text, nullable=True)  # JSON string of answer options (for grila only)
+    correct_answers = Column(Text, nullable=False)  # JSON string for correct answers
     points = Column(Float, default=1.0)
     order_index = Column(Integer)
+    # For FREE_TEXT: evaluation criteria/keywords or examples
+    evaluation_criteria = Column(Text, nullable=True)
 
     # Relationship
     quiz = relationship("Quiz", back_populates="questions")

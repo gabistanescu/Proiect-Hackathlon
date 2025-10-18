@@ -83,6 +83,53 @@ export const routes: Routes = [
     ],
   },
   {
+    path: 'quizzes',
+    canActivate: [AuthGuard],
+    children: [
+      {
+        path: '',
+        loadComponent: () =>
+          import('./components/quizzes/quiz-list.component').then(
+            (m) => m.QuizListComponent
+          ),
+      },
+      {
+        path: 'create',
+        loadComponent: () =>
+          import('./components/quizzes/quiz-form.component').then(
+            (m) => m.QuizFormComponent
+          ),
+      },
+      {
+        path: ':id/edit',
+        loadComponent: () =>
+          import('./components/quizzes/quiz-form.component').then(
+            (m) => m.QuizFormComponent
+          ),
+      },
+      {
+        path: ':id/take',
+        loadComponent: () =>
+          import('./components/quizzes/quiz-take.component').then(
+            (m) => m.QuizTakeComponent
+          ),
+      },
+    ],
+  },
+  {
+    path: 'groups',
+    canActivate: [AuthGuard],
+    children: [
+      {
+        path: '',
+        loadComponent: () =>
+          import('./components/groups/group-management.component').then(
+            (m) => m.GroupManagementComponent
+          ),
+      },
+    ],
+  },
+  {
     path: '**',
     redirectTo: '',
   },

@@ -1,18 +1,34 @@
 import os
+from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
-from src.api.v1 import auth, administrators, professors, students, materials, quizzes, comments, suggestions
+from src.api.v1 import auth, administrators, professors, students, materials, quizzes, comments, suggestions, groups
 from src.config.database import init_db
 from src.config.settings import settings
 
-# Initialize FastAPI app
+
+# Lifespan events
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Application lifespan events"""
+    # Startup
+    print("🚀 Starting up RoEdu Educational Platform...")
+    init_db()
+    print("✅ Database initialized successfully!")
+    yield
+    # Shutdown
+    print("🛑 Shutting down RoEdu Educational Platform...")
+
+
+# Initialize FastAPI app with lifespan
 app = FastAPI(
     title=settings.PROJECT_NAME,
     version=settings.VERSION,
     description=settings.DESCRIPTION,
-    debug=settings.DEBUG
+    debug=settings.DEBUG,
+    lifespan=lifespan
 )
 
 # CORS middleware - PERMITE TOATE ORIGINILE pentru development
@@ -40,18 +56,8 @@ app.include_router(materials.router, prefix="/api/v1/materials", tags=["Material
 app.include_router(suggestions.router, prefix="/api/v1/materials", tags=["Suggestions"])
 app.include_router(quizzes.router, prefix="/api/v1/quizzes", tags=["Quizzes"])
 app.include_router(comments.router, prefix="/api/v1/comments", tags=["Comments"])
+app.include_router(groups.router, prefix="/api/v1/groups", tags=["Groups"])
 
-@app.on_event("startup")
-async def startup_event():
-    """Initialize database on startup"""
-    print("Starting up RoEdu Educational Platform...")
-    init_db()
-    print("Database initialized successfully!")
-
-@app.on_event("shutdown")
-async def shutdown_event():
-    """Cleanup on shutdown"""
-    print("Shutting down RoEdu Educational Platform...")
 
 @app.get("/", tags=["Root"])
 async def root():
@@ -63,6 +69,7 @@ async def root():
         "redoc": "/redoc"
     }
 
+
 @app.get("/health", tags=["Health"])
 async def health_check():
     """Health check endpoint"""
@@ -70,3 +77,13 @@ async def health_check():
         "status": "healthy",
         "version": settings.VERSION
     }
+
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(
+        "src.main:app",
+        host="0.0.0.0",
+        port=8000,
+        reload=True
+    )

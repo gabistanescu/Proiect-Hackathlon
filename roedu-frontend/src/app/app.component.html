@@ -80,6 +80,14 @@
                     <span class="dropdown-icon">📚</span>
                     <span>Materialele mele</span>
                   </a>
+                  <a *ngIf="userRole === 'professor'" routerLink="/quizzes/create" class="dropdown-item" (click)="closeDropdown()">
+                    <span class="dropdown-icon">✏️</span>
+                    <span>Creeaza Test</span>
+                  </a>
+                  <a *ngIf="userRole === 'professor'" routerLink="/groups" class="dropdown-item" (click)="closeDropdown()">
+                    <span class="dropdown-icon">👥</span>
+                    <span>Gestionare Grupuri</span>
+                  </a>
                   <a routerLink="/saved-materials" class="dropdown-item" (click)="closeDropdown()">
                     <span class="dropdown-icon">💾</span>
                     <span>Materiale salvate</span>
