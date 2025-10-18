@@ -17,29 +17,22 @@
              class="nav-link">
             Acasă
           </a>
-
-          <a routerLink="/about"
-             routerLinkActive="active"
-             [routerLinkActiveOptions]="{ exact: true }"
-             class="nav-link">
-            Despre Noi
-          </a>
           <a routerLink="/how-to-access"
-             routerLinkActive="active"
-             [routerLinkActiveOptions]="{ exact: true }"
-             class="nav-link">
-            Cum obții Accesul
-          </a>
-          <a routerLink="/contact"
-             routerLinkActive="active"
-             [routerLinkActiveOptions]="{ exact: true }"
-             class="nav-link">
-            Contact
-          </a>
-
-
-          <ng-container *ngIf="isLoggedIn">
-            <a routerLink="/materials"
+          routerLinkActive="active"
+          [routerLinkActiveOptions]="{ exact: true }"
+          class="nav-link">
+          Cum obții Accesul
+        </a>
+        <a routerLink="/contact"
+        routerLinkActive="active"
+        [routerLinkActiveOptions]="{ exact: true }"
+        class="nav-link">
+        Contact
+      </a>
+      
+      
+      <ng-container *ngIf="isLoggedIn">
+        <a routerLink="/materials"
                routerLinkActive="active"
                class="nav-link">
               Materiale
@@ -47,27 +40,57 @@
             <a routerLink="/quizzes" routerLinkActive="active" class="nav-link">
               Chestionare
             </a>
-            <ng-container *ngIf="userRole === 'professor'">
-              <a routerLink="/professor/dashboard"
-                 routerLinkActive="active"
-                 class="nav-link">
-                Panou de control
-              </a>
-            </ng-container>
             <ng-container *ngIf="userRole === 'administrator'">
               <a routerLink="/admin/dashboard"
-                 routerLinkActive="active"
-                 class="nav-link">
-                Admin
-              </a>
+              routerLinkActive="active"
+              class="nav-link">
+              Admin
+            </a>
             </ng-container>
           </ng-container>
+          
+          <a routerLink="/about"
+         routerLinkActive="active"
+         [routerLinkActiveOptions]="{ exact: true }"
+         class="nav-link">
+        Despre Noi
+      </a>
         </div>
 
         <div class="navbar-right">
           <ng-container *ngIf="isLoggedIn">
             <div class="user-section">
-              <span class="username">{{ username }}</span>
+              <div class="user-dropdown" (click)="toggleDropdown()">
+                <div class="avatar">
+                  <span class="avatar-text">{{ (username || 'U').charAt(0).toUpperCase() }}</span>
+                </div>
+                <span class="username">{{ username }}</span>
+                <span class="dropdown-arrow">▼</span>
+                
+                <div class="dropdown-menu" *ngIf="showDropdown" (click)="$event.stopPropagation()">
+                  <a routerLink="/profile" class="dropdown-item" (click)="closeDropdown()">
+                    <span class="dropdown-icon">👤</span>
+                    <span>Profil</span>
+                  </a>
+                  <a routerLink="/settings" class="dropdown-item" (click)="closeDropdown()">
+                    <span class="dropdown-icon">⚙️</span>
+                    <span>Setări</span>
+                  </a>
+                  <a *ngIf="userRole === 'professor'" routerLink="/my-materials" class="dropdown-item" (click)="closeDropdown()">
+                    <span class="dropdown-icon">📚</span>
+                    <span>Materialele mele</span>
+                  </a>
+                  <a routerLink="/saved-materials" class="dropdown-item" (click)="closeDropdown()">
+                    <span class="dropdown-icon">💾</span>
+                    <span>Materiale salvate</span>
+                  </a>
+                  <div class="dropdown-divider"></div>
+                  <div class="dropdown-item points-display">
+                    <span class="dropdown-icon">⭐</span>
+                    <span><strong>{{ userPoints }}</strong> puncte</span>
+                  </div>
+                </div>
+              </div>
               <button (click)="logout()" class="logout-btn">Deconectare</button>
             </div>
           </ng-container>

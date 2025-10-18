@@ -4,7 +4,7 @@ import { RouterModule } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
 
 @Component({
-  selector: 'app-professor-dashboard',
+  selector: 'app-dashboard',
   standalone: true,
   imports: [CommonModule, RouterModule],
   template: `
@@ -456,7 +456,7 @@ import { AuthService } from '../../services/auth.service';
     }
   `]
 })
-export class ProfessorDashboardComponent implements OnInit {
+export class DashboardComponent implements OnInit {
   professorName: string = 'Profesor';
   
   // Statistics

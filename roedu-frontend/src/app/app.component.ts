@@ -17,6 +17,8 @@ export class AppComponent implements OnInit, OnDestroy {
   isLoggedIn = false;
   userRole: string | null = null;
   username: string | null = null;
+  userPoints: number = 0;
+  showDropdown = false;
   private destroy$ = new Subject<void>();
 
   constructor(
@@ -38,6 +40,8 @@ export class AppComponent implements OnInit, OnDestroy {
         if (user) {
           this.userRole = user.role;
           this.username = user.username;
+          // TODO: Get actual points from user object when backend supports it
+          this.userPoints = 0; // Placeholder
         }
       });
   }
@@ -52,8 +56,17 @@ export class AppComponent implements OnInit, OnDestroy {
     this.isLoggedIn = !!token;
   }
 
+  toggleDropdown(): void {
+    this.showDropdown = !this.showDropdown;
+  }
+
+  closeDropdown(): void {
+    this.showDropdown = false;
+  }
+
   logout(): void {
     this.authService.logout();
     this.router.navigate(['/login']);
+    this.closeDropdown();
   }
 }
