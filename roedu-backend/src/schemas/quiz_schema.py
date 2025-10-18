@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field, ConfigDict
+from pydantic import BaseModel, Field, ConfigDict, field_validator
 from typing import List, Optional, Dict, Any
 from datetime import datetime
 from enum import Enum
@@ -40,6 +40,18 @@ class QuestionResponse(QuestionBase):
     quiz_id: int
     
     model_config = ConfigDict(from_attributes=True)
+    
+    @field_validator('options', 'correct_answers', mode='before')
+    @classmethod
+    def parse_json_fields(cls, value):
+        """Parse JSON strings into lists"""
+        import json
+        if isinstance(value, str):
+            try:
+                return json.loads(value)
+            except (json.JSONDecodeError, TypeError):
+                return value or []
+        return value
 
 # Quiz Schemas
 class QuizBase(BaseModel):

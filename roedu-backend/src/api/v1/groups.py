@@ -81,18 +81,31 @@ def get_professor_groups(db: Session = Depends(get_db)):
     
     result = []
     for group in groups:
+        students_list = []
+        for student in (group.students or []):
+            user = student.user if student.user else None
+            name_parts = user.username.split('.') if user and user.username else ['Student']
+            first_name = name_parts[0].capitalize() if name_parts else 'Student'
+            last_name = name_parts[-1].capitalize() if len(name_parts) > 1 else ''
+            
+            students_list.append({
+                "id": student.id,
+                "email": user.email if user else "",
+                "first_name": first_name,
+                "last_name": last_name
+            })
+        
         result.append(GroupWithStudents(
-            **{**GroupResponse.model_validate(group).model_dump(), 
-               "student_count": len(group.students) if group.students else 0,
-               "students": [
-                   {
-                       "id": s.id,
-                       "email": s.user.email if s.user else "",
-                       "first_name": s.user.first_name if s.user else "",
-                       "last_name": s.user.last_name if s.user else ""
-                   }
-                   for s in (group.students or [])
-               ]}
+            id=group.id,
+            name=group.name,
+            description=group.description,
+            subject=group.subject,
+            grade_level=group.grade_level,
+            professor_id=group.professor_id,
+            created_at=group.created_at,
+            updated_at=group.updated_at,
+            student_count=len(students_list),
+            students=students_list
         ))
     
     return result
