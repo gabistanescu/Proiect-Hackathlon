@@ -4,7 +4,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
-from src.api.v1 import auth, administrators, professors, students, materials, quizzes, comments, suggestions, groups
+from src.api.v1 import auth, administrators, professors, students, materials, quizzes, comments, suggestions, groups, ai_evaluation_reports
 from src.config.database import init_db
 from src.config.settings import settings
 
@@ -57,6 +57,7 @@ app.include_router(suggestions.router, prefix="/api/v1/materials", tags=["Sugges
 app.include_router(quizzes.router, prefix="/api/v1/quizzes", tags=["Quizzes"])
 app.include_router(comments.router, prefix="/api/v1/comments", tags=["Comments"])
 app.include_router(groups.router, prefix="/api/v1/groups", tags=["Groups"])
+app.include_router(ai_evaluation_reports.router, prefix="/api/v1/ai_evaluation_reports", tags=["AI Evaluation Reports"])
 
 
 @app.get("/", tags=["Root"])

@@ -71,6 +71,7 @@ class QuizAttempt(Base):
     # Relationships
     quiz = relationship("Quiz", back_populates="attempts")
     student = relationship("Student", back_populates="quiz_attempts")
+    evaluation_reports = relationship("AIEvaluationReport", back_populates="quiz_attempt", cascade="all, delete-orphan")
 
     def __repr__(self):
         return f"<QuizAttempt(id={self.id}, student_id={self.student_id}, score={self.score})>"

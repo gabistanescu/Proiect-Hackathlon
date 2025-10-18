@@ -16,6 +16,7 @@ from src.models.material_suggestions import (
 from src.models.quiz import Quiz, Question, QuizAttempt, QuestionType
 from src.models.comment import Comment, CommentType, CommentStatus
 from src.models.group import Group
+from src.models.ai_evaluation_report import AIEvaluationReport, EvaluationStatus
 
 __all__ = [
     "User",
@@ -39,4 +40,6 @@ __all__ = [
     "CommentType",
     "CommentStatus",
     "Group",
+    "AIEvaluationReport",
+    "EvaluationStatus",
 ]
