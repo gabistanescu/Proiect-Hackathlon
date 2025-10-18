@@ -471,6 +471,7 @@ export class QuizTakeComponent implements OnInit, OnDestroy {
   startTime: Date | null = null;
   timeLeft = 0;
   timerInterval: any;
+  attemptId: number | null = null;  // Store attempt ID
   
   QuestionType = QuestionType;
 
@@ -494,42 +495,26 @@ export class QuizTakeComponent implements OnInit, OnDestroy {
       next: (quiz) => {
         this.quiz = quiz;
         this.initializeForm();
-        this.startTime = new Date();
         
+        // Start attempt on backend to get server-synced timer
         if (quiz.time_limit && quiz.time_limit > 0) {
-          // Try to restore timer from localStorage
-          const savedTimerKey = `quiz_${quizId}_timer`;
-          const savedTimeLeft = localStorage.getItem(savedTimerKey);
-          
-          if (savedTimeLeft) {
-            // Restore from localStorage
-            const savedTime = parseInt(savedTimeLeft, 10);
-            const savedStartTime = localStorage.getItem(`quiz_${quizId}_start_time`);
-            
-            if (savedStartTime) {
-              const startTime = new Date(savedStartTime);
-              const elapsedSeconds = Math.floor((new Date().getTime() - startTime.getTime()) / 1000);
-              this.timeLeft = Math.max(0, savedTime - elapsedSeconds);
-              
-              if (this.timeLeft <= 0) {
-                // Time expired during refresh
-                this.autoSubmitQuiz();
-                return;
-              }
-            } else {
-              this.timeLeft = savedTime;
+          this.quizService.startAttempt(quizId).subscribe({
+            next: (attempt) => {
+              this.attemptId = attempt.id;
+              // Get time remaining from server
+              this.timeLeft = attempt.time_remaining || ((this.quiz?.time_limit || 60) * 60);
+              this.startTime = new Date(attempt.started_at);
+              this.startTimer();
+              this.isLoading = false;
+            },
+            error: () => {
+              this.errorMessage = 'Nu s-a putut incepe testul';
+              this.isLoading = false;
             }
-          } else {
-            // First time taking the quiz
-            this.timeLeft = quiz.time_limit * 60;
-            localStorage.setItem(savedTimerKey, this.timeLeft.toString());
-            localStorage.setItem(`quiz_${quizId}_start_time`, new Date().toISOString());
-          }
-          
-          this.startTimer(quizId);
+          });
+        } else {
+          this.isLoading = false;
         }
-        
-        this.isLoading = false;
       },
       error: () => {
         this.errorMessage = 'Nu s-a putut încărca testul';
@@ -550,18 +535,34 @@ export class QuizTakeComponent implements OnInit, OnDestroy {
     });
   }
 
-  private startTimer(quizId: number): void {
+  private startTimer(): void {
+    let syncCounter = 0;
+    
     this.timerInterval = setInterval(() => {
       this.timeLeft--;
+      syncCounter++;
       
-      // Save timer to localStorage every second
-      const timerKey = `quiz_${quizId}_timer`;
-      localStorage.setItem(timerKey, this.timeLeft.toString());
+      // Sync with server every 10 seconds to handle multi-device scenarios
+      if (syncCounter % 10 === 0 && this.attemptId) {
+        this.quizService.syncTimer(this.attemptId).subscribe({
+          next: (attempt) => {
+            // Update time from server (more accurate)
+            this.timeLeft = Math.max(0, attempt.time_remaining || this.timeLeft);
+            
+            if (attempt.is_expired) {
+              clearInterval(this.timerInterval);
+              this.autoSubmitQuiz();
+            }
+          },
+          error: (err) => {
+            console.error('Timer sync error:', err);
+            // Continue with local timer if sync fails
+          }
+        });
+      }
       
       if (this.timeLeft <= 0) {
         clearInterval(this.timerInterval);
-        localStorage.removeItem(timerKey);
-        localStorage.removeItem(`quiz_${quizId}_start_time`);
         this.autoSubmitQuiz();
       }
     }, 1000);
@@ -647,7 +648,22 @@ export class QuizTakeComponent implements OnInit, OnDestroy {
   }
 
   private autoSubmitQuiz(): void {
-    this.submitQuiz();
+    if (!this.attemptId) {
+      // Fallback to manual submit if no attempt ID
+      this.submitQuiz();
+      return;
+    }
+    
+    // Use server-side auto-submit which will evaluate answers with AI
+    this.quizService.autoSubmitAttempt(this.attemptId).subscribe({
+      next: (attempt) => {
+        this.router.navigate(['/quizzes/results', attempt.id]);
+      },
+      error: () => {
+        this.errorMessage = 'Eroare la trimiterea automata. Te rog incearca manual.';
+        this.isSubmitting = false;
+      }
+    });
   }
 
   submitQuiz(): void {
@@ -668,15 +684,29 @@ export class QuizTakeComponent implements OnInit, OnDestroy {
       answersDict[question.id] = Array.isArray(answers[index]) ? answers[index] : [answers[index]];
     });
 
-    this.quizService.submitAttempt(this.quiz.id, answersDict).subscribe({
-      next: (attempt) => {
-        this.router.navigate(['/quizzes/results', attempt.id]);
-      },
-      error: () => {
-        this.errorMessage = 'Nu s-au putut trimite răspunsurile. Te rog încearcă din nou.';
-        this.isSubmitting = false;
-      }
-    });
+    // If we have an attempt ID, use auto-submit endpoint (includes AI evaluation)
+    if (this.attemptId) {
+      this.quizService.autoSubmitAttempt(this.attemptId).subscribe({
+        next: (attempt) => {
+          this.router.navigate(['/quizzes/results', attempt.id]);
+        },
+        error: () => {
+          this.errorMessage = 'Nu s-au putut trimite răspunsurile. Te rog încearcă din nou.';
+          this.isSubmitting = false;
+        }
+      });
+    } else {
+      // Fallback to old endpoint if no attempt ID (shouldn't happen)
+      this.quizService.submitAttempt(this.quiz.id, answersDict).subscribe({
+        next: (attempt) => {
+          this.router.navigate(['/quizzes/results', attempt.id]);
+        },
+        error: () => {
+          this.errorMessage = 'Nu s-au putut trimite răspunsurile. Te rog încearcă din nou.';
+          this.isSubmitting = false;
+        }
+      });
+    }
   }
 
   getFormControl(index: number) {

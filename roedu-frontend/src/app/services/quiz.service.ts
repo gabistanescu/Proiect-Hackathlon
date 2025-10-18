@@ -42,6 +42,18 @@ export class QuizService {
     return this.apiService.post<QuizAttempt>(`/quizzes/${id}/attempt`, { answers });
   }
 
+  startAttempt(quizId: number): Observable<QuizAttempt> {
+    return this.apiService.post<QuizAttempt>(`/quizzes/start/${quizId}`, {});
+  }
+
+  syncTimer(attemptId: number): Observable<QuizAttempt> {
+    return this.apiService.put<QuizAttempt>(`/quizzes/${attemptId}/timer-sync`, {});
+  }
+
+  autoSubmitAttempt(attemptId: number): Observable<QuizAttempt> {
+    return this.apiService.post<QuizAttempt>(`/quizzes/${attemptId}/auto-submit`, {});
+  }
+
   getResults(id: number): Observable<QuizAttempt[]> {
     return this.apiService.get<QuizAttempt[]>(`/quizzes/${id}/results`);
   }

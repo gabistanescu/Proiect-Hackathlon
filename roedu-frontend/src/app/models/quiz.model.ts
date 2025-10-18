@@ -60,10 +60,13 @@ export interface QuizAttempt {
   quiz_id: number;
   student_id: number;
   answers: QuestionAnswer[];
-  score: number;
-  max_score: number;
-  submitted_at: Date;
+  score?: number;
+  max_score?: number;
+  submitted_at?: Date;
   completed_at?: Date;
+  started_at: Date;
+  time_remaining?: number;  // Seconds remaining
+  is_expired?: number;  // 0 or 1
 }
 
 export interface QuestionAnswer {
