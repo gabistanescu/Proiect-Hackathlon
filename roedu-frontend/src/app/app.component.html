@@ -57,21 +57,12 @@
               📚 Materiale
             </a>
             <a routerLink="/quizzes" routerLinkActive="active" class="nav-link">
-              Chestionare
-            </a>
               📝 Chestionare
             </a>
             <ng-container *ngIf="userRole === 'administrator'">
               <a routerLink="/admin/dashboard"
-              routerLinkActive="active"
-              class="nav-link">
-              Admin
-            </a>
-              <a
-                routerLink="/admin/dashboard"
-                routerLinkActive="active"
-                class="nav-link"
-              >
+                 routerLinkActive="active"
+                 class="nav-link">
                 Admin
               </a>
             </ng-container>
