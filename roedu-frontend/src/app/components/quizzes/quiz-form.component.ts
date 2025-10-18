@@ -4,7 +4,9 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { QuizService } from '../../services/quiz.service';
+import { GroupService } from '../../services/group.service';
 import { QuestionType, Quiz, QuizCreate } from '../../models/quiz.model';
+import { Group } from '../../models/group.model';
 
 @Component({
   selector: 'app-quiz-form',
@@ -82,6 +84,56 @@ import { QuestionType, Quiz, QuizCreate } from '../../models/quiz.model';
                 Publicat
               </label>
             </div>
+          </div>
+        </div>
+
+        <!-- Group Selection Section -->
+        <div class="form-section">
+          <h3>👥 Grup de Elevi (Optional)</h3>
+          
+          <div class="form-group">
+            <label for="group_id">Selectează Grup</label>
+            <select id="group_id" class="form-control" 
+                   formControlName="group_id"
+                   (change)="onGroupChange()">
+              <option value="">Fără grup - Test public pentru toți</option>
+              <option *ngFor="let group of availableGroups" [value]="group.id">
+                {{ group.name }} ({{ group.student_count }} elevi)
+              </option>
+            </select>
+            <p class="help-text" *ngIf="!selectedGroupId">Lăsați gol pentru a crea un test disponibil pentru toți elevii</p>
+          </div>
+
+          <!-- Selected Group Students -->
+          <div *ngIf="selectedGroupId && selectedGroupStudents.length > 0" class="group-students">
+            <div class="group-students-header">
+              <h4>Elevi din Grup</h4>
+              <div class="student-selection-buttons">
+                <button type="button" class="btn-small btn-primary" (click)="selectAllStudents()">
+                  ✓ Selectează toți
+                </button>
+                <button type="button" class="btn-small btn-secondary" (click)="deselectAllStudents()">
+                  ✗ Deselectează toți
+                </button>
+              </div>
+            </div>
+
+            <div class="students-checkboxes">
+              <div *ngFor="let student of selectedGroupStudents" class="student-checkbox">
+                <label>
+                  <input type="checkbox" 
+                         [checked]="isStudentSelected(student.id)"
+                         (change)="toggleStudentSelection(student.id)">
+                  <span class="student-name">{{ student.first_name }} {{ student.last_name }}</span>
+                  <span class="student-email">{{ student.email }}</span>
+                </label>
+              </div>
+            </div>
+
+            <p class="info-message">
+              Selectați elevii din grupul care vor rezolva acest test. 
+              Elevii deselectați nu vor vedea testul.
+            </p>
           </div>
         </div>
 
@@ -472,6 +524,125 @@ import { QuestionType, Quiz, QuizCreate } from '../../models/quiz.model';
     .btn-secondary:hover {
       background: #d0d0d0;
     }
+
+    .help-text {
+      font-size: 12px;
+      color: #999;
+      margin-top: 4px;
+      margin-bottom: 0;
+    }
+
+    .group-students {
+      background: #f9f9f9;
+      padding: 16px;
+      border-radius: 6px;
+      margin-top: 12px;
+      border: 1px solid #e0e0e0;
+    }
+
+    .group-students-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+    }
+
+    .group-students-header h4 {
+      margin: 0;
+      font-size: 14px;
+      font-weight: 600;
+      color: #333;
+    }
+
+    .student-selection-buttons {
+      display: flex;
+      gap: 8px;
+    }
+
+    .btn-small {
+      padding: 6px 12px;
+      font-size: 12px;
+      border: none;
+      border-radius: 4px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .btn-small.btn-primary {
+      background: #667eea;
+      color: white;
+    }
+
+    .btn-small.btn-primary:hover {
+      background: #5568d3;
+    }
+
+    .btn-small.btn-secondary {
+      background: #e0e0e0;
+      color: #333;
+    }
+
+    .btn-small.btn-secondary:hover {
+      background: #d0d0d0;
+    }
+
+    .students-checkboxes {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+
+    .student-checkbox {
+      background: white;
+      padding: 12px;
+      border-radius: 4px;
+      border: 1px solid #ddd;
+      transition: all 0.2s;
+    }
+
+    .student-checkbox:hover {
+      border-color: #667eea;
+      box-shadow: 0 2px 4px rgba(102, 126, 234, 0.1);
+    }
+
+    .student-checkbox label {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 4px;
+      margin: 0;
+      cursor: pointer;
+    }
+
+    .student-checkbox input {
+      margin-right: 8px;
+      width: 16px;
+      height: 16px;
+      cursor: pointer;
+    }
+
+    .student-name {
+      font-weight: 600;
+      color: #333;
+      font-size: 13px;
+    }
+
+    .student-email {
+      font-size: 11px;
+      color: #999;
+    }
+
+    .info-message {
+      background: #e8f0ff;
+      padding: 8px 12px;
+      border-radius: 4px;
+      border-left: 3px solid #667eea;
+      font-size: 12px;
+      color: #667eea;
+      margin: 0;
+    }
   `]
 })
 export class QuizFormComponent implements OnInit {
@@ -487,15 +658,23 @@ export class QuizFormComponent implements OnInit {
   isEditMode = false;
   quizId: number | null = null;
 
+  // Group management properties
+  availableGroups: Group[] = [];
+  selectedGroupId: number | null = null;
+  selectedGroupStudents: any[] = [];
+  selectedStudentIds: Set<number> = new Set();
+
   constructor(
     private fb: FormBuilder,
     private quizService: QuizService,
+    private groupService: GroupService,
     private route: ActivatedRoute,
     private router: Router
   ) {}
 
   ngOnInit(): void {
     this.initializeForm();
+    this.loadGroups();
     
     // Check if editing
     this.route.params.subscribe((params: any) => {
@@ -509,6 +688,17 @@ export class QuizFormComponent implements OnInit {
     });
   }
 
+  private loadGroups(): void {
+    this.groupService.getGroups().subscribe({
+      next: (groups) => {
+        this.availableGroups = groups;
+      },
+      error: () => {
+        console.error('Failed to load groups');
+      }
+    });
+  }
+
   private initializeForm(): void {
     this.quizForm = this.fb.group({
       title: ['', [Validators.required, Validators.minLength(1), Validators.maxLength(255)]],
@@ -518,6 +708,8 @@ export class QuizFormComponent implements OnInit {
       time_limit: [null],
       is_published: [false],
       total_points: [0, Validators.required],
+      group_id: [null],
+      selected_students: [[]],
       questions: this.fb.array([this.createQuestionGroup()])
     });
   }
@@ -628,6 +820,63 @@ export class QuizFormComponent implements OnInit {
 
   isGrilaQuestion(questionType: QuestionType): boolean {
     return questionType === QuestionType.SINGLE_CHOICE || questionType === QuestionType.MULTIPLE_CHOICE;
+  }
+
+  onGroupChange(): void {
+    const groupIdValue = this.quizForm.get('group_id')?.value;
+    this.selectedGroupId = groupIdValue ? parseInt(groupIdValue) : null;
+    
+    if (this.selectedGroupId) {
+      const selectedGroup = this.availableGroups.find(g => g.id === this.selectedGroupId);
+      if (selectedGroup && selectedGroup.students) {
+        this.selectedGroupStudents = selectedGroup.students;
+        // Select all students by default
+        this.selectedStudentIds.clear();
+        this.selectedGroupStudents.forEach(student => {
+          this.selectedStudentIds.add(student.id);
+        });
+        this.quizForm.patchValue({
+          selected_students: Array.from(this.selectedStudentIds)
+        });
+      }
+    } else {
+      this.selectedGroupStudents = [];
+      this.selectedStudentIds.clear();
+      this.quizForm.patchValue({
+        selected_students: []
+      });
+    }
+  }
+
+  isStudentSelected(studentId: number): boolean {
+    return this.selectedStudentIds.has(studentId);
+  }
+
+  toggleStudentSelection(studentId: number): void {
+    if (this.selectedStudentIds.has(studentId)) {
+      this.selectedStudentIds.delete(studentId);
+    } else {
+      this.selectedStudentIds.add(studentId);
+    }
+    this.quizForm.patchValue({
+      selected_students: Array.from(this.selectedStudentIds)
+    });
+  }
+
+  selectAllStudents(): void {
+    this.selectedGroupStudents.forEach(student => {
+      this.selectedStudentIds.add(student.id);
+    });
+    this.quizForm.patchValue({
+      selected_students: Array.from(this.selectedStudentIds)
+    });
+  }
+
+  deselectAllStudents(): void {
+    this.selectedStudentIds.clear();
+    this.quizForm.patchValue({
+      selected_students: []
+    });
   }
 
   submitForm(): void {
