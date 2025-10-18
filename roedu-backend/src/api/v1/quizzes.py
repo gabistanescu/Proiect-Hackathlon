@@ -3,6 +3,7 @@ from sqlalchemy.orm import Session
 from typing import List, Optional
 from datetime import datetime
 import json
+import logging
 
 from src.config.database import get_db
 from src.services.auth_service import get_current_user
@@ -17,6 +18,8 @@ from src.schemas.quiz_schema import (
 )
 
 router = APIRouter()
+
+logger = logging.getLogger(__name__)
 
 def score_free_text_answer(student_answer: str, evaluation_criteria: str, correct_answers: List[str]) -> tuple[float, bool]:
     """
@@ -685,8 +688,25 @@ def auto_submit_quiz_attempt(
                         total_score += question.points
                 
                 elif question.question_type == QuestionType.FREE_TEXT:
-                    # For free text, add default 0 (will be evaluated later)
-                    pass
+                    # For free text, use AI evaluation if available
+                    from src.services.ai_evaluation_service import get_ai_evaluation_service
+                    ai_service = get_ai_evaluation_service()
+                    
+                    if student_answers:
+                        student_text = student_answers if isinstance(student_answers, str) else student_answers[0]
+                        criteria = question.evaluation_criteria or "Check if answer makes sense"
+                        try:
+                            ai_score, ai_feedback, metadata = ai_service.evaluate_free_text_answer(
+                                question.question_text,
+                                student_text,
+                                criteria,
+                                question.points,
+                                "free_text"
+                            )
+                            total_score += ai_score
+                        except Exception as e:
+                            # logger.error(f"AI evaluation failed: {e}, skipping score") # Original code had this line commented out
+                            pass  # If AI fails, don't add points
             
             attempt.score = total_score
             attempt.max_score = max_score
