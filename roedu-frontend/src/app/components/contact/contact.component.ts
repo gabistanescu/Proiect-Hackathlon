@@ -20,7 +20,7 @@ import { RouterModule } from '@angular/router';
         <div class="hero-image">
           <div class="placeholder-image">
             <span class="icon">📧</span>
-            <p>Contactați Suportul</p>
+            <p class="hero-subtitle">Contactați Suportul</p>
           </div>
         </div>
       </div>

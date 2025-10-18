@@ -14,9 +14,19 @@ export const routes: Routes = [
       import('./components/home/home.component').then((m) => m.HomeComponent),
   },
   {
+    path: 'about',
+    loadComponent: () =>
+      import('./components/about/about.component').then((m) => m.AboutComponent),
+  },
+  {
     path: 'contact',
     loadComponent: () =>
       import('./components/contact/contact.component').then((m) => m.ContactComponent),
+  },
+  {
+    path: 'how-to-access',
+    loadComponent: () =>
+      import('./components/access/access.component').then((m) => m.AccessComponent),
   },
   {
     path: 'login',
