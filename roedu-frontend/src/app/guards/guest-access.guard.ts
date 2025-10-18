@@ -9,12 +9,12 @@ export class GuestAccessGuard implements CanActivate {
   constructor(private authService: AuthService, private router: Router) {}
 
   canActivate(): Observable<boolean | UrlTree> {
-    return this.authService.currentUser$.pipe(
+    return this.authService.isLoggedIn$.pipe(
       take(1),
-      map((user) => {
-        // Allow access only for guests (no authenticated user)
-        if (!user) return true;
-        // If a user is authenticated, redirect to home
+      map((isLoggedIn) => {
+        // Allow access only for guests (not logged in)
+        if (!isLoggedIn) return true;
+        // If user is logged in, redirect to home
         return this.router.createUrlTree(['/']);
       })
     );
