@@ -65,17 +65,6 @@ import { Material } from '../../models/material.model';
             placeholder="Materie..."
             class="filter-input"
           />
-
-          @if (isProfessor()) {
-          <label class="checkbox-filter">
-            <input
-              type="checkbox"
-              [(ngModel)]="showOnlyMine"
-              (change)="applyFilters()"
-            />
-            <span>Doar materialele mele</span>
-          </label>
-          }
         </div>
       </div>
 

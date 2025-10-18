@@ -11,56 +11,60 @@
 
       <div class="navbar-menu" [class.active]="true">
         <div class="navbar-items">
-          <a routerLink="/"
-             routerLinkActive="active"
-             [routerLinkActiveOptions]="{ exact: true }"
-             class="nav-link">
+          <a
+            routerLink="/"
+            routerLinkActive="active"
+            [routerLinkActiveOptions]="{ exact: true }"
+            class="nav-link"
+          >
             Acasă
           </a>
 
-          <a routerLink="/about"
-             routerLinkActive="active"
-             [routerLinkActiveOptions]="{ exact: true }"
-             class="nav-link">
+          <a
+            routerLink="/about"
+            routerLinkActive="active"
+            [routerLinkActiveOptions]="{ exact: true }"
+            class="nav-link"
+          >
             Despre Noi
           </a>
-          
-          <a routerLink="/contact"
-             routerLinkActive="active"
-             [routerLinkActiveOptions]="{ exact: true }"
-             class="nav-link">
+          <a
+            routerLink="/how-to-access"
+            routerLinkActive="active"
+            [routerLinkActiveOptions]="{ exact: true }"
+            class="nav-link"
+          >
+            Cum obții Accesul
+          </a>
+          <a
+            routerLink="/contact"
+            routerLinkActive="active"
+            [routerLinkActiveOptions]="{ exact: true }"
+            class="nav-link"
+          >
             Contact
           </a>
 
-          <ng-container *ngIf="!isLoggedIn">
-            <a routerLink="/how-to-access"
-               routerLinkActive="active"
-               [routerLinkActiveOptions]="{ exact: true }"
-               class="nav-link">
-              Cum obții Accesul
-            </a>
-          </ng-container>
-
           <ng-container *ngIf="isLoggedIn">
-            <a routerLink="/materials"
-               routerLinkActive="active"
-               class="nav-link">
-              Materiale
+            <a routerLink="/feed" routerLinkActive="active" class="nav-link">
+              📱 Flux de postări
+            </a>
+            <a
+              routerLink="/materials"
+              routerLinkActive="active"
+              class="nav-link"
+            >
+              📚 Materiale
             </a>
             <a routerLink="/quizzes" routerLinkActive="active" class="nav-link">
-              Chestionare
+              📝 Chestionare
             </a>
-            <ng-container *ngIf="userRole === 'professor'">
-              <a routerLink="/professor/dashboard"
-                 routerLinkActive="active"
-                 class="nav-link">
-                Panou de control
-              </a>
-            </ng-container>
             <ng-container *ngIf="userRole === 'administrator'">
-              <a routerLink="/admin/dashboard"
-                 routerLinkActive="active"
-                 class="nav-link">
+              <a
+                routerLink="/admin/dashboard"
+                routerLinkActive="active"
+                class="nav-link"
+              >
                 Admin
               </a>
             </ng-container>
@@ -91,7 +95,9 @@
   <!-- Footer -->
   <footer class="footer">
     <div class="footer-content">
-      <p>&copy; 2025 RoEdu - Platformă educațională. Toate drepturile rezervate.</p>
+      <p>
+        &copy; 2025 RoEdu - Platformă educațională. Toate drepturile rezervate.
+      </p>
       <p>Educație modernă și echitabilă pentru toți elevii din România. 🇷🇴</p>
     </div>
   </footer>

@@ -13,7 +13,7 @@ export interface Material {
   subject: string;
   grade_level?: number;
   tags?: string[];
-  is_shared: boolean;
+  is_shared?: boolean; // Deprecated - kept for backwards compatibility
   file_paths: string[];
   professor_id: number;
   visibility: VisibilityType;
@@ -35,7 +35,7 @@ export interface MaterialCreate {
   subject: string;
   grade_level?: number;
   tags?: string[];
-  is_shared: boolean;
+  is_shared?: boolean; // Deprecated - kept for backwards compatibility
   visibility: VisibilityType;
   file_paths?: string[];
 }

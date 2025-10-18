@@ -273,14 +273,6 @@ import { ProfileType } from '../../models/user.model';
           </small>
         </div>
 
-        <!-- Shared (for backwards compatibility) -->
-        <div class="form-group">
-          <label class="checkbox-label">
-            <input type="checkbox" formControlName="is_shared" />
-            <span>Material partajat (inclusiv în biblioteca publică)</span>
-          </label>
-        </div>
-
         <!-- Error Message -->
         <div *ngIf="errorMessage()" class="alert alert-error">
           {{ errorMessage() }}
@@ -636,7 +628,6 @@ export class MaterialFormComponent implements OnInit, AfterViewInit {
       grade_level: [''],
       tagsInput: [''],
       visibility: ['public', Validators.required],
-      is_shared: [true],
     });
   }
 
@@ -667,7 +658,6 @@ export class MaterialFormComponent implements OnInit, AfterViewInit {
           grade_level: material.grade_level || '',
           tagsInput: material.tags?.join(', ') || '',
           visibility: material.visibility || 'public',
-          is_shared: material.is_shared,
         });
 
         this.editorContent.set(material.content || '');
@@ -775,7 +765,6 @@ export class MaterialFormComponent implements OnInit, AfterViewInit {
       grade_level: formValue.grade_level ? +formValue.grade_level : undefined,
       tags: tags,
       visibility: formValue.visibility as VisibilityType,
-      is_shared: formValue.is_shared,
       file_paths: this.uploadedFiles().map((f) => f.path),
     };
 
@@ -790,12 +779,10 @@ export class MaterialFormComponent implements OnInit, AfterViewInit {
       },
       error: (err) => {
         this.isSubmitting.set(false);
-        const errorDetail = err.error?.detail || 'Eroare necunoscută';
-        const statusCode = err.status || 'Fără cod de status';
         this.errorMessage.set(
-          `Eroare la salvarea materialului: ${errorDetail} (Cod: ${statusCode})`
+          err.error?.detail || 'Eroare la salvarea materialului'
         );
-        console.error('Detalii eroare:', err);
+        console.error(err);
       },
     });
   }
