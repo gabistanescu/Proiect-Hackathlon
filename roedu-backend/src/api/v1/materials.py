@@ -90,6 +90,8 @@ def create_material(
     """
     Create a new material (Professors only)
     """
+    from src.models.material import VisibilityType
+    
     material = Material(
         title=material_data.title,
         description=material_data.description,
@@ -99,6 +101,7 @@ def create_material(
         subject=material_data.subject,
         tags=serialize_tags(material_data.tags) if material_data.tags else "",
         grade_level=material_data.grade_level,
+        visibility=material_data.visibility,
         is_shared=1 if material_data.is_shared else 0,
         professor_id=current_user.id
     )
@@ -106,6 +109,12 @@ def create_material(
     db.add(material)
     db.commit()
     db.refresh(material)
+    
+    # Add counts for response
+    material.feedback_professors_count = 0
+    material.feedback_students_count = 0
+    material.suggestions_count = 0
+    material.user_has_feedback = False
     
     return material
 
@@ -118,13 +127,34 @@ def list_materials(
     grade_level: Optional[int] = Query(None, ge=9, le=12),
     search: Optional[str] = None,
     professor_id: Optional[int] = None,
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
     """
     List materials with filtering and pagination
+    Visibility rules:
+    - Students: only PUBLIC materials
+    - Professors: PUBLIC + PROFESSORS_ONLY + own PRIVATE materials
     """
-    query = db.query(Material).filter(Material.is_shared == 1)
+    from src.models.material import VisibilityType
+    from src.models.material_suggestions import MaterialFeedbackProfessor, MaterialFeedbackStudent
+    from sqlalchemy import func, case
     
+    query = db.query(Material)
+    
+    # Apply visibility filter based on user role
+    if current_user.role == UserRole.STUDENT:
+        # Students see only PUBLIC materials
+        query = query.filter(Material.visibility == VisibilityType.PUBLIC)
+    elif current_user.role == UserRole.PROFESSOR:
+        # Professors see PUBLIC, PROFESSORS_ONLY, and their own PRIVATE materials
+        query = query.filter(
+            (Material.visibility == VisibilityType.PUBLIC) |
+            (Material.visibility == VisibilityType.PROFESSORS_ONLY) |
+            ((Material.visibility == VisibilityType.PRIVATE) & (Material.professor_id == current_user.id))
+        )
+    
+    # Apply other filters
     if profile_type:
         query = query.filter(Material.profile_type == profile_type)
     if subject:
@@ -141,19 +171,108 @@ def list_materials(
     
     query = query.order_by(Material.created_at.desc())
     
-    return paginate_results(query, page, page_size)
+    # Get paginated results
+    result = paginate_results(query, page, page_size)
+    
+    # Add feedback counts and user feedback status for each material
+    if 'items' in result:
+        for material in result['items']:
+            # Count feedback
+            material.feedback_professors_count = db.query(func.count(MaterialFeedbackProfessor.id)).filter(
+                MaterialFeedbackProfessor.material_id == material.id
+            ).scalar() or 0
+            
+            material.feedback_students_count = db.query(func.count(MaterialFeedbackStudent.id)).filter(
+                MaterialFeedbackStudent.material_id == material.id
+            ).scalar() or 0
+            
+            # Check if current user has given feedback
+            if current_user.role == UserRole.PROFESSOR:
+                user_feedback = db.query(MaterialFeedbackProfessor).filter(
+                    MaterialFeedbackProfessor.material_id == material.id,
+                    MaterialFeedbackProfessor.professor_id == current_user.id
+                ).first()
+                material.user_has_feedback = user_feedback is not None
+            elif current_user.role == UserRole.STUDENT:
+                user_feedback = db.query(MaterialFeedbackStudent).filter(
+                    MaterialFeedbackStudent.material_id == material.id,
+                    MaterialFeedbackStudent.student_id == current_user.id
+                ).first()
+                material.user_has_feedback = user_feedback is not None
+            else:
+                material.user_has_feedback = False
+            
+            # Count suggestions (only for professors)
+            material.suggestions_count = 0
+            if current_user.role == UserRole.PROFESSOR:
+                from src.models.material_suggestions import MaterialSuggestion
+                material.suggestions_count = db.query(func.count(MaterialSuggestion.id)).filter(
+                    MaterialSuggestion.material_id == material.id
+                ).scalar() or 0
+    
+    return result
 
 @router.get("/{material_id}", response_model=MaterialResponse)
-def get_material(material_id: int, db: Session = Depends(get_db)):
+def get_material(
+    material_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
     """
     Get material details by ID
+    Checks visibility permissions
     """
+    from src.models.material import VisibilityType
+    from src.models.material_suggestions import MaterialFeedbackProfessor, MaterialFeedbackStudent, MaterialSuggestion
+    from sqlalchemy import func
+    
     material = db.query(Material).filter(Material.id == material_id).first()
     if not material:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Material not found"
         )
+    
+    # Check visibility permissions
+    if material.visibility == VisibilityType.PRIVATE:
+        if current_user.role != UserRole.PROFESSOR or material.professor_id != current_user.id:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="You don't have permission to view this material"
+            )
+    elif material.visibility == VisibilityType.PROFESSORS_ONLY:
+        if current_user.role != UserRole.PROFESSOR:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="This material is only visible to professors"
+            )
+    
+    # Add counts
+    material.feedback_professors_count = db.query(func.count(MaterialFeedbackProfessor.id)).filter(
+        MaterialFeedbackProfessor.material_id == material.id
+    ).scalar() or 0
+    
+    material.feedback_students_count = db.query(func.count(MaterialFeedbackStudent.id)).filter(
+        MaterialFeedbackStudent.material_id == material.id
+    ).scalar() or 0
+    
+    material.suggestions_count = db.query(func.count(MaterialSuggestion.id)).filter(
+        MaterialSuggestion.material_id == material.id
+    ).scalar() or 0
+    
+    # Check user feedback
+    if current_user.role == UserRole.PROFESSOR:
+        user_feedback = db.query(MaterialFeedbackProfessor).filter(
+            MaterialFeedbackProfessor.material_id == material.id,
+            MaterialFeedbackProfessor.professor_id == current_user.id
+        ).first()
+        material.user_has_feedback = user_feedback is not None
+    elif current_user.role == UserRole.STUDENT:
+        user_feedback = db.query(MaterialFeedbackStudent).filter(
+            MaterialFeedbackStudent.material_id == material.id,
+            MaterialFeedbackStudent.student_id == current_user.id
+        ).first()
+        material.user_has_feedback = user_feedback is not None
     
     return material
 
@@ -369,3 +488,169 @@ def ask_ai_about_material(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"AI service error: {str(e)}"
         )
+
+
+# ============================================================================
+# FEEDBACK ENDPOINTS
+# ============================================================================
+
+@router.post("/{material_id}/feedback/professor")
+def toggle_professor_feedback(
+    material_id: int,
+    current_user: User = Depends(require_role([UserRole.PROFESSOR])),
+    db: Session = Depends(get_db)
+):
+    """
+    Toggle professor feedback (helpful/not helpful) on a material
+    Only professors can give professor feedback
+    """
+    from src.models.material_suggestions import MaterialFeedbackProfessor
+    from src.models.material import VisibilityType
+    
+    material = db.query(Material).filter(Material.id == material_id).first()
+    if not material:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Material not found")
+    
+    # Check if material allows feedback (not PRIVATE or is owner)
+    if material.visibility == VisibilityType.PRIVATE and material.professor_id != current_user.id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Cannot give feedback on private materials"
+        )
+    
+    # Check if feedback already exists
+    existing_feedback = db.query(MaterialFeedbackProfessor).filter(
+        MaterialFeedbackProfessor.material_id == material_id,
+        MaterialFeedbackProfessor.professor_id == current_user.id
+    ).first()
+    
+    if existing_feedback:
+        # Remove feedback (toggle off)
+        db.delete(existing_feedback)
+        db.commit()
+        return {
+            "material_id": material_id,
+            "user_id": current_user.id,
+            "helpful": False,
+            "message": "Feedback removed"
+        }
+    else:
+        # Add feedback (toggle on)
+        feedback = MaterialFeedbackProfessor(
+            material_id=material_id,
+            professor_id=current_user.id,
+            helpful=1
+        )
+        db.add(feedback)
+        db.commit()
+        return {
+            "material_id": material_id,
+            "user_id": current_user.id,
+            "helpful": True,
+            "message": "Feedback added"
+        }
+
+
+@router.post("/{material_id}/feedback/student")
+def toggle_student_feedback(
+    material_id: int,
+    current_user: User = Depends(require_role([UserRole.STUDENT])),
+    db: Session = Depends(get_db)
+):
+    """
+    Toggle student feedback (helpful/not helpful) on a material
+    Only students can give student feedback, and only on PUBLIC materials
+    """
+    from src.models.material_suggestions import MaterialFeedbackStudent
+    from src.models.material import VisibilityType
+    
+    material = db.query(Material).filter(Material.id == material_id).first()
+    if not material:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Material not found")
+    
+    # Students can only feedback PUBLIC materials
+    if material.visibility != VisibilityType.PUBLIC:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Can only give feedback on public materials"
+        )
+    
+    # Check if feedback already exists
+    existing_feedback = db.query(MaterialFeedbackStudent).filter(
+        MaterialFeedbackStudent.material_id == material_id,
+        MaterialFeedbackStudent.student_id == current_user.id
+    ).first()
+    
+    if existing_feedback:
+        # Remove feedback (toggle off)
+        db.delete(existing_feedback)
+        db.commit()
+        return {
+            "material_id": material_id,
+            "user_id": current_user.id,
+            "helpful": False,
+            "message": "Feedback removed"
+        }
+    else:
+        # Add feedback (toggle on)
+        feedback = MaterialFeedbackStudent(
+            material_id=material_id,
+            student_id=current_user.id,
+            helpful=1
+        )
+        db.add(feedback)
+        db.commit()
+        return {
+            "material_id": material_id,
+            "user_id": current_user.id,
+            "helpful": True,
+            "message": "Feedback added"
+        }
+
+
+@router.get("/{material_id}/feedback")
+def get_material_feedback(
+    material_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Get feedback statistics for a material
+    Returns separate counts for professors and students
+    """
+    from src.models.material_suggestions import MaterialFeedbackProfessor, MaterialFeedbackStudent
+    from sqlalchemy import func
+    
+    material = db.query(Material).filter(Material.id == material_id).first()
+    if not material:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Material not found")
+    
+    professors_count = db.query(func.count(MaterialFeedbackProfessor.id)).filter(
+        MaterialFeedbackProfessor.material_id == material_id
+    ).scalar() or 0
+    
+    students_count = db.query(func.count(MaterialFeedbackStudent.id)).filter(
+        MaterialFeedbackStudent.material_id == material_id
+    ).scalar() or 0
+    
+    # Check if current user has given feedback
+    user_has_feedback = False
+    if current_user.role == UserRole.PROFESSOR:
+        user_feedback = db.query(MaterialFeedbackProfessor).filter(
+            MaterialFeedbackProfessor.material_id == material_id,
+            MaterialFeedbackProfessor.professor_id == current_user.id
+        ).first()
+        user_has_feedback = user_feedback is not None
+    elif current_user.role == UserRole.STUDENT:
+        user_feedback = db.query(MaterialFeedbackStudent).filter(
+            MaterialFeedbackStudent.material_id == material_id,
+            MaterialFeedbackStudent.student_id == current_user.id
+        ).first()
+        user_has_feedback = user_feedback is not None
+    
+    return {
+        "material_id": material_id,
+        "professors_count": professors_count,
+        "students_count": students_count,
+        "user_has_feedback": user_has_feedback
+    }

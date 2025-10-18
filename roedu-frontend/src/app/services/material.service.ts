@@ -79,6 +79,6 @@ export class MaterialService {
       filename: string;
       file_path: string;
       message: string;
-    }>('/materials/upload', formData);
+    }>('/materials/upload', formData, true); // true = skip Content-Type header
   }
 }

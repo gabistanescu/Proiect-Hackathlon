@@ -3,7 +3,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
-from src.api.v1 import auth, administrators, professors, students, materials, quizzes, comments
+from src.api.v1 import auth, administrators, professors, students, materials, quizzes, comments, suggestions
 from src.config.database import init_db
 from src.config.settings import settings
 
@@ -36,6 +36,7 @@ app.include_router(administrators.router, prefix="/api/v1/administrators", tags=
 app.include_router(professors.router, prefix="/api/v1/professors", tags=["Professors"])
 app.include_router(students.router, prefix="/api/v1/students", tags=["Students"])
 app.include_router(materials.router, prefix="/api/v1/materials", tags=["Materials"])
+app.include_router(suggestions.router, prefix="/api/v1/materials", tags=["Suggestions"])
 app.include_router(quizzes.router, prefix="/api/v1/quizzes", tags=["Quizzes"])
 app.include_router(comments.router, prefix="/api/v1/comments", tags=["Comments"])
 

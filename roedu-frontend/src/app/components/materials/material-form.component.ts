@@ -578,7 +578,9 @@ import { ProfileType } from '../../models/user.model';
     `,
   ],
 })
-export class MaterialFormComponent implements OnInit {
+export class MaterialFormComponent implements OnInit, AfterViewInit {
+  @ViewChild('contentEditor') contentEditor!: ElementRef<HTMLDivElement>;
+
   materialForm: FormGroup;
   isEditMode = signal(false);
   materialId = signal<number | null>(null);
@@ -614,6 +616,13 @@ export class MaterialFormComponent implements OnInit {
     }
   }
 
+  ngAfterViewInit() {
+    // Set initial content if we're creating a new material
+    if (!this.isEditMode() && this.contentEditor) {
+      this.contentEditor.nativeElement.innerHTML = '';
+    }
+  }
+
   loadMaterial(id: number) {
     this.materialService.getMaterialById(id).subscribe({
       next: (material) => {
@@ -628,6 +637,13 @@ export class MaterialFormComponent implements OnInit {
         });
 
         this.editorContent.set(material.content || '');
+
+        // Set editor content manually after a short delay to ensure DOM is ready
+        setTimeout(() => {
+          if (this.contentEditor && material.content) {
+            this.contentEditor.nativeElement.innerHTML = material.content;
+          }
+        }, 100);
 
         if (material.file_paths?.length) {
           const files = material.file_paths.map((path) => ({
