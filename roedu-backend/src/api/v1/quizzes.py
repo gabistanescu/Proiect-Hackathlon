@@ -492,13 +492,20 @@ def get_quiz_result(
         
         # Score based on question type
         if question.question_type == QuestionType.FREE_TEXT:
-            student_text = student_ans[0] if student_ans else ""
-            score, _ = score_free_text_answer(
-                student_text,
-                question.evaluation_criteria or "",
-                correct_answers[question.id]
-            )
-            question_scores[question.id] = score * question.points
+            # Check if AI evaluation exists for this question
+            ai_eval = ai_evaluations.get(question.id)
+            if ai_eval:
+                # Use AI score
+                question_scores[question.id] = ai_eval["ai_score"]
+            else:
+                # Fallback to keyword matching if no AI evaluation
+                student_text = student_ans[0] if student_ans else ""
+                score, _ = score_free_text_answer(
+                    student_text,
+                    question.evaluation_criteria or "",
+                    correct_answers[question.id]
+                )
+                question_scores[question.id] = score * question.points
         else:
             # Grila scoring
             if set(student_ans) == set(correct_answers[question.id]):

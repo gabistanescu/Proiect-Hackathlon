@@ -96,96 +96,69 @@ class AIEvaluationService:
         max_score: float,
         question_type: str
     ) -> str:
-        """Build comprehensive evaluation prompt for AI with detailed feedback structure"""
+        """Build comprehensive evaluation prompt for AI with detailed feedback in Romanian"""
         
-        prompt = f"""You are an expert educational evaluator specialized in assessing student answers.
+        prompt = f"""Ești un evaluator educațional expert specializat în evaluarea răspunsurilor studenților.
 
-QUESTION:
+ÎNTREBARE:
 {question_text}
 
-STUDENT'S ANSWER:
+RĂSPUNSUL STUDENTULUI:
 {student_answer}
 
-EVALUATION CRITERIA / KEY POINTS:
+CRITERII DE EVALUARE / PUNCTE CHEIE:
 {correct_criteria}
 
-MAXIMUM SCORE: {int(max_score)} points
+PUNCTAJ MAXIM: {int(max_score)} puncte
 
-EVALUATION GUIDELINES:
-1. **Correctness**: Is the answer factually correct?
-2. **Completeness**: Does the answer address all aspects of the question?
-3. **Clarity**: Is the explanation clear and well-structured?
-4. **Understanding**: Does the answer demonstrate true understanding, not just memorization?
-5. **Reasoning**: Is the logic sound and well-explained?
+LINIILE DIRECTOARE DE EVALUARE:
+1. **Corectitudine**: Răspunsul este factual corect?
+2. **Completitudine**: Răspunsul abordează toate aspectele întrebării?
+3. **Claritate**: Explicația este clară și bine structurată?
+4. **Înțelegere**: Răspunsul demonstrează o înțelegere adevărată, nu doar memorare?
+5. **Logică**: Logica este solidă și bine explicată?
 
-SCORING RUBRIC:
-- Full Score ({int(max_score)} pts): Answer is comprehensive, correct, and shows deep understanding
-- 80% ({int(max_score * 0.8)} pts): Answer is mostly correct with minor gaps
-- 60% ({int(max_score * 0.6)} pts): Answer covers main points but lacks completeness or clarity
-- 40% ({int(max_score * 0.4)} pts): Answer has significant gaps but shows some understanding
-- 20% ({int(max_score * 0.2)} pts): Minimal understanding, mostly incorrect
-- 0% (0 pts): No answer or completely incorrect
+SCALA DE PUNCTARE:
+- Punctaj complet ({int(max_score)} pct): Răspuns cuprinzător, corect și care demonstrează înțelegere profundă
+- 80% ({int(max_score * 0.8)} pct): Răspuns în mare parte corect cu mici lacune
+- 60% ({int(max_score * 0.6)} pct): Răspuns care acoperă punctele principale dar le lipsește completitudinea sau claritatea
+- 40% ({int(max_score * 0.4)} pct): Răspuns cu lacune semnificative dar care demonstrează o anumită înțelegere
+- 20% ({int(max_score * 0.2)} pct): Înțelegere minimă, răspuns în mare parte incorect
+- 0% (0 pct): Fără răspuns sau complet incorect
 
-Provide your evaluation in the following JSON format (MUST BE VALID JSON):
+Furnizează evaluarea în următorul format JSON (TREBUIE SĂ FIE JSON VALID):
 {{
-    "score": <number between 0 and {int(max_score)}>,
-    "feedback": "<Comprehensive feedback that addresses all aspects of the answer>",
-    "reasoning": "<Brief explanation of why this score was assigned>",
+    "score": <număr între 0 și {int(max_score)}>,
+    "feedback": "<Feedback cuprinzător care abordează toate aspectele răspunsului>",
+    "reasoning": "<Explicație scurtă a motivului pentru care acest punctaj a fost atribuit>",
     "score_breakdown": {{
         "correctness": <0-{int(max_score)}>,
         "completeness": <0-{int(max_score)}>,
         "clarity": <0-{int(max_score)}>
     }},
     "strengths": [
-        "<Specific strength 1 - what the student did well>",
-        "<Specific strength 2>",
-        "<Specific strength 3 if applicable>"
+        "<Punct forte specific 1 - ce a făcut bine studentul>",
+        "<Punct forte specific 2>",
+        "<Punct forte specific 3 dacă e cazul>"
     ],
     "improvements": [
-        "<Specific area for improvement 1>",
-        "<Specific area for improvement 2>",
-        "<Specific area for improvement 3 if applicable>"
+        "<Arie de îmbunătățire specifică 1>",
+        "<Arie de îmbunătățire specifică 2>",
+        "<Arie de îmbunătățire specifică 3 dacă e cazul>"
     ],
     "suggestions": [
-        "<Actionable suggestion 1 for better understanding>",
-        "<Actionable suggestion 2>",
-        "<Actionable suggestion 3 if applicable>"
+        "<Sugestie acționabilă 1 pentru o mai bună înțelegere>",
+        "<Sugestie acționabilă 2>",
+        "<Sugestie acționabilă 3 dacă e cazul>"
     ]
 }}
 
-IMPORTANT REQUIREMENTS:
-- Return ONLY valid JSON, no markdown, no explanatory text
-- Score must be an integer or float between 0 and {int(max_score)}
-- Feedback should be detailed and professional
-- Strengths, improvements, and suggestions should be specific and actionable
-- All arrays must contain at least 2-3 items
-
-Example response format (replace with actual evaluation):
-{{
-    "score": {int(max_score * 0.75)},
-    "feedback": "Your answer demonstrates good understanding of the core concepts and provides clear examples. You correctly identified the main points and explained them well. However, you could have included more specific supporting details to make the answer more comprehensive.",
-    "reasoning": "Full marks were not awarded because while the answer is mostly correct and clear, it lacks some of the depth and supporting details expected for a complete response.",
-    "score_breakdown": {{
-        "correctness": {int(max_score * 0.9)},
-        "completeness": {int(max_score * 0.7)},
-        "clarity": {int(max_score * 0.8)}
-    }},
-    "strengths": [
-        "Clear and logical presentation of ideas",
-        "Correct understanding of fundamental concepts",
-        "Good use of examples to support explanations"
-    ],
-    "improvements": [
-        "Could include more supporting evidence or references",
-        "Some concepts could be explained in greater depth",
-        "Could benefit from more detailed analysis"
-    ],
-    "suggestions": [
-        "Try to provide specific examples for each main point",
-        "Consider exploring the topic from multiple perspectives",
-        "Review related concepts to deepen your understanding"
-    ]
-}}"""
+CERINȚE IMPORTANTE:
+- Răspunde DOAR cu JSON valid, fără markdown, fără text explicativ
+- Punctajul trebuie să fie un întreg sau zecimal între 0 și {int(max_score)}
+- Feedback-ul trebuie să fie detaliat și profesional ÎN LIMBA ROMÂNĂ
+- Punctele forte, îmbunătățirile și sugestiile trebuie să fie specifice și acționabile
+- Toate array-urile trebuie să conțină cel puțin 2-3 elemente"""
         
         return prompt
     
