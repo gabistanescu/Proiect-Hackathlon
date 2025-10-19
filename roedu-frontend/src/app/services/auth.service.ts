@@ -36,6 +36,7 @@ export class AuthService {
 
   logout(): void {
     localStorage.removeItem('access_token');
+    localStorage.removeItem('role');
     this.isLoggedInSubject.next(false);
     this.currentUserSubject.next(null);
   }
@@ -57,6 +58,10 @@ export class AuthService {
       tap(user => {
         this.currentUserSubject.next(user);
         this.isLoggedInSubject.next(true);
+        // Save role to localStorage for UI role-based rendering
+        if (user?.role) {
+          localStorage.setItem('role', user.role);
+        }
       }),
       catchError(error => {
         console.error('Error loading current user:', error);
