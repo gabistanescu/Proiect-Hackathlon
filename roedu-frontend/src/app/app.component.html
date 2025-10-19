@@ -13,41 +13,83 @@
       <!-- Desktop Navigation -->
       <div class="navbar-desktop">
         <div class="navbar-items">
-          <a routerLink="/" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }" class="nav-link">
+          <!-- Acasă - întotdeauna vizibil -->
+          <a
+            routerLink="/"
+            routerLinkActive="active"
+            [routerLinkActiveOptions]="{ exact: true }"
+            class="nav-link"
+          >
             🏠 Acasă
           </a>
-          <a routerLink="/about" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }" class="nav-link">
-            ℹ️ Despre
-          </a>
-          <a routerLink="/how-to-access" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }" class="nav-link">
-            🔑 Acces
-          </a>
-          <a routerLink="/contact" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }" class="nav-link">
-            ✉️ Contact
-          </a>
 
+          <!-- Secțiune pentru utilizatori LOGAȚI -->
           <ng-container *ngIf="isLoggedIn">
-            <div class="nav-divider"></div>
             <a routerLink="/feed" routerLinkActive="active" class="nav-link">
               📱 Flux
             </a>
-            <a routerLink="/materials" routerLinkActive="active" class="nav-link">
+            <a
+              routerLink="/materials"
+              routerLinkActive="active"
+              class="nav-link"
+            >
               📚 Materiale
             </a>
             <a routerLink="/quizzes" routerLinkActive="active" class="nav-link">
               📝 Teste
             </a>
             <ng-container *ngIf="userRole === 'professor'">
-              <a routerLink="/groups" routerLinkActive="active" class="nav-link">
+              <a
+                routerLink="/groups"
+                routerLinkActive="active"
+                class="nav-link"
+              >
                 👥 Grupuri
               </a>
             </ng-container>
             <ng-container *ngIf="userRole === 'administrator'">
-              <a routerLink="/admin/dashboard" routerLinkActive="active" class="nav-link admin-link">
+              <a
+                routerLink="/admin/dashboard"
+                routerLinkActive="active"
+                class="nav-link admin-link"
+              >
                 ⚙️ Admin
               </a>
             </ng-container>
           </ng-container>
+
+          <!-- Acces - doar pentru utilizatori NELOGAȚI -->
+          <ng-container *ngIf="!isLoggedIn">
+            <a
+              routerLink="/how-to-access"
+              routerLinkActive="active"
+              [routerLinkActiveOptions]="{ exact: true }"
+              class="nav-link"
+            >
+              🔑 Acces
+            </a>
+          </ng-container>
+
+          <!-- Separator vizual -->
+          <div class="nav-divider"></div>
+
+          <!-- Secțiune informațională - întotdeauna vizibilă -->
+          <a
+            routerLink="/about"
+            routerLinkActive="active"
+            [routerLinkActiveOptions]="{ exact: true }"
+            class="nav-link"
+          >
+            ℹ️ Despre
+          </a>
+          <a
+            routerLink="/contact"
+            routerLinkActive="active"
+            [routerLinkActiveOptions]="{ exact: true }"
+            class="nav-link"
+          >
+            ✉️ Contact
+          </a>
         </div>
 
         <!-- Desktop Right Section -->
@@ -56,38 +98,66 @@
             <div class="user-section">
               <div class="user-dropdown" (click)="toggleDropdown()">
                 <div class="avatar">
-                  <span>{{ (username || 'U').charAt(0).toUpperCase() }}</span>
+                  <span>{{ (username || "U").charAt(0).toUpperCase() }}</span>
                 </div>
                 <span class="username-text">{{ username }}</span>
-                <span class="dropdown-arrow" [class.open]="showDropdown">▼</span>
+                <span class="dropdown-arrow" [class.open]="showDropdown"
+                  >▼</span
+                >
 
-                <div class="dropdown-menu" *ngIf="showDropdown" (click)="$event.stopPropagation()">
-                  <a routerLink="/profile" class="dropdown-item" (click)="closeDropdown()">
+                <div
+                  class="dropdown-menu"
+                  *ngIf="showDropdown"
+                  (click)="$event.stopPropagation()"
+                >
+                  <a
+                    routerLink="/profile"
+                    class="dropdown-item"
+                    (click)="closeDropdown()"
+                  >
                     <span class="dropdown-icon">👤</span>
                     <span>Profil</span>
                   </a>
-                  <a routerLink="/settings" class="dropdown-item" (click)="closeDropdown()">
+                  <a
+                    routerLink="/settings"
+                    class="dropdown-item"
+                    (click)="closeDropdown()"
+                  >
                     <span class="dropdown-icon">⚙️</span>
                     <span>Setări</span>
                   </a>
                   <ng-container *ngIf="userRole === 'professor'">
-                    <a routerLink="/my-materials" class="dropdown-item" (click)="closeDropdown()">
+                    <a
+                      routerLink="/my-materials"
+                      class="dropdown-item"
+                      (click)="closeDropdown()"
+                    >
                       <span class="dropdown-icon">📚</span>
                       <span>Materialele mele</span>
                     </a>
-                    <a routerLink="/quizzes/create" class="dropdown-item" (click)="closeDropdown()">
+                    <a
+                      routerLink="/quizzes/create"
+                      class="dropdown-item"
+                      (click)="closeDropdown()"
+                    >
                       <span class="dropdown-icon">✏️</span>
                       <span>Creeaza Test</span>
                     </a>
                   </ng-container>
-                  <a routerLink="/saved-materials" class="dropdown-item" (click)="closeDropdown()">
+                  <a
+                    routerLink="/saved-materials"
+                    class="dropdown-item"
+                    (click)="closeDropdown()"
+                  >
                     <span class="dropdown-icon">💾</span>
                     <span>Salvate</span>
                   </a>
                   <div class="dropdown-divider"></div>
                   <div class="dropdown-item points-display">
                     <span class="dropdown-icon">⭐</span>
-                    <span><strong>{{ userPoints }}</strong> pct</span>
+                    <span
+                      ><strong>{{ userPoints }}</strong> pct</span
+                    >
                   </div>
                 </div>
               </div>
@@ -102,7 +172,11 @@
       </div>
 
       <!-- Mobile Menu Button -->
-      <button class="mobile-menu-btn" (click)="toggleMobileMenu()" [class.active]="showMobileMenu">
+      <button
+        class="mobile-menu-btn"
+        (click)="toggleMobileMenu()"
+        [class.active]="showMobileMenu"
+      >
         <span class="hamburger"></span>
         <span class="hamburger"></span>
         <span class="hamburger"></span>
@@ -111,59 +185,146 @@
       <!-- Mobile Menu -->
       <div class="mobile-menu" *ngIf="showMobileMenu" [@slideIn]>
         <div class="mobile-menu-items">
-          <a routerLink="/" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }" class="mobile-nav-link" (click)="closeMobileMenu()">
+          <!-- Acasă - întotdeauna vizibil -->
+          <a
+            routerLink="/"
+            routerLinkActive="active"
+            [routerLinkActiveOptions]="{ exact: true }"
+            class="mobile-nav-link"
+            (click)="closeMobileMenu()"
+          >
             🏠 Acasă
           </a>
-          <a routerLink="/about" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }" class="mobile-nav-link" (click)="closeMobileMenu()">
-            ℹ️ Despre
-          </a>
-          <a routerLink="/how-to-access" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }" class="mobile-nav-link" (click)="closeMobileMenu()">
-            🔑 Acces
-          </a>
-          <a routerLink="/contact" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }" class="mobile-nav-link" (click)="closeMobileMenu()">
-            ✉️ Contact
-          </a>
 
+          <!-- Secțiune pentru utilizatori LOGAȚI -->
           <ng-container *ngIf="isLoggedIn">
-            <div class="mobile-nav-divider"></div>
-            <a routerLink="/feed" routerLinkActive="active" class="mobile-nav-link" (click)="closeMobileMenu()">
-              📱 Flux de postări
+            <a
+              routerLink="/feed"
+              routerLinkActive="active"
+              class="mobile-nav-link"
+              (click)="closeMobileMenu()"
+            >
+              📱 Flux
             </a>
-            <a routerLink="/materials" routerLinkActive="active" class="mobile-nav-link" (click)="closeMobileMenu()">
+            <a
+              routerLink="/materials"
+              routerLinkActive="active"
+              class="mobile-nav-link"
+              (click)="closeMobileMenu()"
+            >
               📚 Materiale
             </a>
-            <a routerLink="/quizzes" routerLinkActive="active" class="mobile-nav-link" (click)="closeMobileMenu()">
+            <a
+              routerLink="/quizzes"
+              routerLinkActive="active"
+              class="mobile-nav-link"
+              (click)="closeMobileMenu()"
+            >
               📝 Teste
             </a>
             <ng-container *ngIf="userRole === 'professor'">
-              <a routerLink="/groups" routerLinkActive="active" class="mobile-nav-link" (click)="closeMobileMenu()">
+              <a
+                routerLink="/groups"
+                routerLinkActive="active"
+                class="mobile-nav-link"
+                (click)="closeMobileMenu()"
+              >
                 👥 Grupuri
               </a>
-              <a routerLink="/quizzes/create" class="mobile-nav-link" (click)="closeMobileMenu()">
+              <a
+                routerLink="/quizzes/create"
+                class="mobile-nav-link"
+                (click)="closeMobileMenu()"
+              >
                 ✏️ Creeaza Test
               </a>
             </ng-container>
             <ng-container *ngIf="userRole === 'administrator'">
-              <a routerLink="/admin/dashboard" routerLinkActive="active" class="mobile-nav-link admin-link" (click)="closeMobileMenu()">
+              <a
+                routerLink="/admin/dashboard"
+                routerLinkActive="active"
+                class="mobile-nav-link admin-link"
+                (click)="closeMobileMenu()"
+              >
                 ⚙️ Admin
               </a>
             </ng-container>
+          </ng-container>
 
+          <!-- Acces - doar pentru utilizatori NELOGAȚI -->
+          <ng-container *ngIf="!isLoggedIn">
+            <a
+              routerLink="/how-to-access"
+              routerLinkActive="active"
+              [routerLinkActiveOptions]="{ exact: true }"
+              class="mobile-nav-link"
+              (click)="closeMobileMenu()"
+            >
+              🔑 Acces
+            </a>
+          </ng-container>
+
+          <!-- Separator -->
+          <div class="mobile-nav-divider"></div>
+
+          <!-- Secțiune informațională - întotdeauna vizibilă -->
+          <a
+            routerLink="/about"
+            routerLinkActive="active"
+            [routerLinkActiveOptions]="{ exact: true }"
+            class="mobile-nav-link"
+            (click)="closeMobileMenu()"
+          >
+            ℹ️ Despre
+          </a>
+          <a
+            routerLink="/contact"
+            routerLinkActive="active"
+            [routerLinkActiveOptions]="{ exact: true }"
+            class="mobile-nav-link"
+            (click)="closeMobileMenu()"
+          >
+            ✉️ Contact
+          </a>
+
+          <!-- Secțiune user (doar când e logat) -->
+          <ng-container *ngIf="isLoggedIn">
             <div class="mobile-nav-divider"></div>
-            <a routerLink="/profile" class="mobile-nav-link" (click)="closeMobileMenu()">
+            <a
+              routerLink="/profile"
+              class="mobile-nav-link"
+              (click)="closeMobileMenu()"
+            >
               👤 Profil
             </a>
-            <a routerLink="/settings" class="mobile-nav-link" (click)="closeMobileMenu()">
+            <a
+              routerLink="/settings"
+              class="mobile-nav-link"
+              (click)="closeMobileMenu()"
+            >
               ⚙️ Setări
             </a>
-            <button (click)="logout(); closeMobileMenu()" class="mobile-logout-btn">Deconectare</button>
+            <button
+              (click)="logout(); closeMobileMenu()"
+              class="mobile-logout-btn"
+            >
+              Deconectare
+            </button>
           </ng-container>
           <ng-container *ngIf="!isLoggedIn">
             <div class="mobile-nav-divider"></div>
-            <a routerLink="/login" class="mobile-nav-link" (click)="closeMobileMenu()">
+            <a
+              routerLink="/login"
+              class="mobile-nav-link"
+              (click)="closeMobileMenu()"
+            >
               Conectare
             </a>
-            <a routerLink="/register" class="mobile-nav-link signup" (click)="closeMobileMenu()">
+            <a
+              routerLink="/register"
+              class="mobile-nav-link signup"
+              (click)="closeMobileMenu()"
+            >
               Înregistrare
             </a>
           </ng-container>

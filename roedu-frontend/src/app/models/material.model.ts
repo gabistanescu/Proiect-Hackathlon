@@ -21,6 +21,7 @@ export interface Material {
   feedback_professors_count: number;
   feedback_students_count: number;
   suggestions_count: number;
+  comments_count: number;
   user_has_feedback: boolean;
   last_reviewed?: Date;
   created_at: Date;

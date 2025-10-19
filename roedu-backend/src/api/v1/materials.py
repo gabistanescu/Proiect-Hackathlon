@@ -16,6 +16,7 @@ from src.schemas.material_schema import (
 from src.models.user import User, UserRole
 from src.models.material import Material
 from src.models.student import Student
+from src.models.comment import Comment
 from src.utils.helpers import paginate_results, parse_tags, serialize_tags, parse_json_field, serialize_json_field
 
 router = APIRouter()
@@ -118,6 +119,7 @@ def create_material(
     material.feedback_professors_count = 0
     material.feedback_students_count = 0
     material.suggestions_count = 0
+    material.comments_count = 0
     material.user_has_feedback = False
     
     return material
@@ -189,6 +191,11 @@ def list_materials(
             
             material.feedback_students_count = db.query(func.count(MaterialFeedbackStudent.id)).filter(
                 MaterialFeedbackStudent.material_id == material.id
+            ).scalar() or 0
+            
+            # Count comments
+            material.comments_count = db.query(func.count(Comment.id)).filter(
+                Comment.material_id == material.id
             ).scalar() or 0
             
             # Check if current user has given feedback
@@ -282,6 +289,11 @@ def get_materials_feed(
             else:
                 material.feedback_students_count = 0
             
+            # Count comments (always visible regardless of visibility)
+            material.comments_count = db.query(func.count(Comment.id)).filter(
+                Comment.material_id == material.id
+            ).scalar() or 0
+            
             # Check if current user has given feedback
             if current_user.role == UserRole.PROFESSOR:
                 user_feedback = db.query(MaterialFeedbackProfessor).filter(
@@ -360,6 +372,10 @@ def get_material(
     
     material.suggestions_count = db.query(func.count(MaterialSuggestion.id)).filter(
         MaterialSuggestion.material_id == material.id
+    ).scalar() or 0
+    
+    material.comments_count = db.query(func.count(Comment.id)).filter(
+        Comment.material_id == material.id
     ).scalar() or 0
     
     # Check user feedback

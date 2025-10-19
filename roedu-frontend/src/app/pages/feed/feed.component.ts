@@ -109,27 +109,34 @@ import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 
           <!-- Card Footer - Interactions -->
           <div class="card-footer">
-            <div class="interaction-stats">
+            <div class="interaction-buttons">
+              <!-- Like buttons - disabled (preview only) -->
               @if (isProfessor() || material.visibility === 'public') {
-              <div class="stat">
+              <button class="btn-interaction btn-professor" disabled>
                 <span class="stat-icon">💡</span>
-                <span class="stat-label"
-                  >{{ material.feedback_professors_count }} profesori</span
-                >
-              </div>
+                <span class="stat-value">{{
+                  material.feedback_professors_count
+                }}</span>
+                <span class="stat-label">Profesori</span>
+              </button>
               } @if (material.visibility === 'public') {
-              <div class="stat">
+              <button class="btn-interaction btn-student" disabled>
                 <span class="stat-icon">⭐</span>
-                <span class="stat-label"
-                  >{{ material.feedback_students_count }} elevi</span
-                >
-              </div>
+                <span class="stat-value">{{
+                  material.feedback_students_count
+                }}</span>
+                <span class="stat-label">Elevi</span>
+              </button>
               }
 
-              <div class="stat">
+              <!-- Comments button - disabled (preview only) -->
+              <button class="btn-interaction btn-comments" disabled>
                 <span class="stat-icon">💬</span>
+                <span class="stat-value">{{
+                  material.comments_count || 0
+                }}</span>
                 <span class="stat-label">Comentarii</span>
-              </div>
+              </button>
             </div>
 
             <button class="btn-view" (click)="viewMaterial(material.id)">
@@ -403,11 +410,61 @@ import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
         padding: 1rem 1.5rem;
         background: #f7fafc;
         border-top: 1px solid #e2e8f0;
+        gap: 1rem;
+        flex-wrap: wrap;
       }
 
-      .interaction-stats {
+      .interaction-buttons {
         display: flex;
-        gap: 1.5rem;
+        gap: 0.75rem;
+        flex-wrap: wrap;
+        flex: 1;
+      }
+
+      .btn-interaction {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 0.25rem;
+        padding: 0.5rem 0.75rem;
+        background: white;
+        border: 2px solid #e2e8f0;
+        border-radius: 8px;
+        cursor: not-allowed;
+        transition: all 0.3s;
+        opacity: 0.8;
+      }
+
+      .btn-interaction .stat-icon {
+        font-size: 1.3rem;
+      }
+
+      .btn-interaction .stat-value {
+        font-size: 0.95rem;
+        font-weight: bold;
+        color: #2d3748;
+      }
+
+      .btn-interaction .stat-label {
+        font-size: 0.7rem;
+        color: #718096;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+      }
+
+      .btn-interaction.btn-professor {
+        border-color: #d6bcfa;
+        background: #faf5ff;
+      }
+
+      .btn-interaction.btn-student {
+        border-color: #fbd38d;
+        background: #fffaf0;
+      }
+
+      .btn-interaction.btn-comments {
+        border-color: #90cdf4;
+        background: #ebf8ff;
       }
 
       .stat {
@@ -431,6 +488,7 @@ import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
         font-weight: 500;
         cursor: pointer;
         transition: background 0.3s;
+        white-space: nowrap;
       }
 
       .btn-view:hover {

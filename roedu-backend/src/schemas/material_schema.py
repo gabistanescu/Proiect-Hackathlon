@@ -54,6 +54,7 @@ class MaterialResponse(MaterialBase):
     feedback_professors_count: int = 0
     feedback_students_count: int = 0
     suggestions_count: int = 0
+    comments_count: int = 0
     user_has_feedback: bool = False
     
     model_config = ConfigDict(from_attributes=True)

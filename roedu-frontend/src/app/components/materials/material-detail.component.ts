@@ -44,8 +44,16 @@ import { MaterialSuggestionsComponent } from './material-suggestions.component';
         }
 
         <!-- Generate AI Quiz Button -->
-        <button class="btn btn-ai" (click)="generateAIQuiz()" [disabled]="isGeneratingQuiz()">
-          {{ isGeneratingQuiz() ? '⏳ Se generează...' : '🤖 Generează Test cu AI' }}
+        <button
+          class="btn btn-ai"
+          (click)="generateAIQuiz()"
+          [disabled]="isGeneratingQuiz()"
+        >
+          {{
+            isGeneratingQuiz()
+              ? '⏳ Se generează...'
+              : '🤖 Generează Test cu AI'
+          }}
         </button>
       </div>
 
@@ -82,73 +90,6 @@ import { MaterialSuggestionsComponent } from './material-suggestions.component';
           </div>
           } @if (material()!.description) {
           <p class="description">{{ material()!.description }}</p>
-          }
-        </div>
-
-        <!-- Feedback Section -->
-        <div class="feedback-section">
-          <h3>💡 Feedback</h3>
-          <div class="feedback-stats">
-            <div class="stat-card">
-              <div class="stat-icon">👨‍🏫</div>
-              <div class="stat-info">
-                <div class="stat-number">
-                  {{ material()!.feedback_professors_count || 0 }}
-                </div>
-                <div class="stat-label">Profesori</div>
-              </div>
-            </div>
-            <div class="stat-card">
-              <div class="stat-icon">👨‍🎓</div>
-              <div class="stat-info">
-                <div class="stat-number">
-                  {{ material()!.feedback_students_count || 0 }}
-                </div>
-                <div class="stat-label">Studenți</div>
-              </div>
-            </div>
-          </div>
-
-          <!-- Feedback button only for non-owners -->
-          @if (isProfessor() && !canEdit()) {
-          <button
-            class="btn-feedback"
-            [class.active]="material()!.user_has_feedback"
-            (click)="toggleProfessorFeedback()"
-          >
-            <span class="btn-icon">💡</span>
-            <span class="btn-text">
-              {{
-                material()!.user_has_feedback ? 'M-a ajutat!' : 'Material util?'
-              }}
-            </span>
-          </button>
-          } @if (isStudent()) {
-          <button
-            class="btn-feedback"
-            [class.active]="material()!.user_has_feedback"
-            (click)="toggleStudentFeedback()"
-          >
-            <span class="btn-icon">⭐</span>
-            <span class="btn-text">
-              {{
-                material()!.user_has_feedback ? 'M-a ajutat!' : 'Material util?'
-              }}
-            </span>
-          </button>
-          } @if (isProfessor() && material()!.suggestions_count > 0) {
-          <div class="suggestions-link">
-            <button class="btn-suggestions" (click)="showSuggestions()">
-              📝 {{ material()!.suggestions_count }}
-              {{
-                material()!.suggestions_count === 1 ? 'Sugestie' : 'Sugestii'
-              }}
-            </button>
-          </div>
-          } @if (isProfessor() && canSuggest()) {
-          <button class="btn-add-suggestion" (click)="addSuggestion()">
-            ➕ Propune îmbunătățire
-          </button>
           }
         </div>
 
@@ -195,6 +136,88 @@ import { MaterialSuggestionsComponent } from './material-suggestions.component';
           </div>
         </div>
         }
+
+        <!-- Feedback Section - Moved after content -->
+        <div class="feedback-section">
+          <h3>💡 Ai găsit util acest material?</h3>
+
+          <div class="feedback-actions">
+            <!-- Like buttons with animation -->
+            @if (isProfessor() && !canEdit()) {
+            <button
+              class="btn-like btn-like-professor"
+              [class.active]="material()!.user_has_feedback"
+              [class.pulse]="likeAnimation()"
+              (click)="toggleProfessorFeedback()"
+            >
+              <span class="btn-icon">💡</span>
+              <span class="btn-text">
+                {{ material()!.user_has_feedback ? 'Util!' : 'Material util' }}
+              </span>
+              <span class="like-count">{{
+                material()!.feedback_professors_count || 0
+              }}</span>
+            </button>
+            } @if (isStudent() && !canEdit()) {
+            <button
+              class="btn-like btn-like-student"
+              [class.active]="material()!.user_has_feedback"
+              [class.pulse]="likeAnimation()"
+              (click)="toggleStudentFeedback()"
+            >
+              <span class="btn-icon">⭐</span>
+              <span class="btn-text">
+                {{ material()!.user_has_feedback ? 'Util!' : 'Material util' }}
+              </span>
+              <span class="like-count">{{
+                material()!.feedback_students_count || 0
+              }}</span>
+            </button>
+            }
+
+            <!-- Comments button -->
+            <button class="btn-comments" (click)="openCommentsModal()">
+              <span class="btn-icon">💬</span>
+              <span class="btn-text">Comentarii</span>
+              <span class="comment-count">{{
+                material()!.comments_count || 0
+              }}</span>
+            </button>
+
+            <!-- Suggestions (only for professors) -->
+            @if (isProfessor() && canSuggest()) {
+            <button class="btn-suggest" (click)="addSuggestion()">
+              <span class="btn-icon">💡</span>
+              <span class="btn-text">Sugerează îmbunătățire</span>
+            </button>
+            }
+          </div>
+
+          <!-- Stats display -->
+          <div class="feedback-stats">
+            <div class="stat-item">
+              <span class="stat-icon">👨‍🏫</span>
+              <span class="stat-value">{{
+                material()!.feedback_professors_count || 0
+              }}</span>
+              <span class="stat-label">Profesori</span>
+            </div>
+            <div class="stat-item">
+              <span class="stat-icon">👨‍🎓</span>
+              <span class="stat-value">{{
+                material()!.feedback_students_count || 0
+              }}</span>
+              <span class="stat-label">Elevi</span>
+            </div>
+            <div class="stat-item">
+              <span class="stat-icon">💬</span>
+              <span class="stat-value">{{
+                material()!.comments_count || 0
+              }}</span>
+              <span class="stat-label">Comentarii</span>
+            </div>
+          </div>
+        </div>
 
         <!-- Comments Section -->
         <div class="comments-section">
@@ -254,6 +277,82 @@ import { MaterialSuggestionsComponent } from './material-suggestions.component';
           </div>
           }
         </div>
+
+        <!-- Comments Modal -->
+        @if (showCommentsModal()) {
+        <div class="comments-modal-overlay" (click)="closeCommentsModal()">
+          <div
+            class="comments-modal-container"
+            (click)="$event.stopPropagation()"
+          >
+            <div class="modal-header">
+              <h3>💬 Comentarii ({{ comments().length }})</h3>
+              <button class="btn-close-modal" (click)="closeCommentsModal()">
+                ✕
+              </button>
+            </div>
+
+            <div class="modal-body">
+              <!-- Add Comment Form -->
+              <div class="add-comment-form">
+                <textarea
+                  [(ngModel)]="newCommentText"
+                  placeholder="Scrie un comentariu..."
+                  class="comment-textarea"
+                  rows="3"
+                ></textarea>
+                <button
+                  class="btn btn-submit-comment"
+                  (click)="addComment(); newCommentText = ''"
+                  [disabled]="!newCommentText.trim() || isSubmittingComment()"
+                >
+                  {{
+                    isSubmittingComment()
+                      ? 'Se trimite...'
+                      : '📝 Publică comentariul'
+                  }}
+                </button>
+              </div>
+
+              <!-- Comments List -->
+              <div class="comments-list">
+                @if (comments().length === 0) {
+                <div class="no-comments">
+                  <p>Niciun comentariu încă. Fii primul care comentează!</p>
+                </div>
+                } @for (comment of comments(); track comment.id) {
+                <div class="comment-item">
+                  <div class="comment-header">
+                    <div class="comment-author">
+                      <div class="author-avatar">
+                        {{ (comment.username?.charAt(0) || '?').toUpperCase() }}
+                      </div>
+                      <div class="author-info">
+                        <span class="author-name">{{ comment.username }}</span>
+                        <span class="comment-date">{{
+                          formatDate(comment.created_at)
+                        }}</span>
+                      </div>
+                    </div>
+                    @if (canDeleteComment(comment)) {
+                    <button
+                      class="btn-delete-comment"
+                      (click)="deleteComment(comment.id)"
+                    >
+                      🗑️
+                    </button>
+                    }
+                  </div>
+                  <div class="comment-content">
+                    <p>{{ comment.text }}</p>
+                  </div>
+                </div>
+                }
+              </div>
+            </div>
+          </div>
+        </div>
+        }
 
         <!-- PDF Viewer Modal -->
         @if (selectedPdf()) {
@@ -565,6 +664,353 @@ import { MaterialSuggestionsComponent } from './material-suggestions.component';
         background: #5548d9;
         color: white;
         border-style: solid;
+      }
+
+      /* New Feedback Section Styles */
+      .feedback-actions {
+        display: flex;
+        gap: 1rem;
+        margin-bottom: 1.5rem;
+        flex-wrap: wrap;
+      }
+
+      .btn-like,
+      .btn-comments,
+      .btn-suggest {
+        flex: 1;
+        min-width: 150px;
+        padding: 0.875rem 1.25rem;
+        border: 2px solid #e0e0e0;
+        border-radius: 12px;
+        background: white;
+        font-size: 0.95rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+        position: relative;
+      }
+
+      .btn-like .btn-icon,
+      .btn-comments .btn-icon,
+      .btn-suggest .btn-icon {
+        font-size: 1.3rem;
+      }
+
+      .btn-like:hover,
+      .btn-comments:hover,
+      .btn-suggest:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+      }
+
+      .btn-like-professor {
+        border-color: #7c4dff;
+      }
+
+      .btn-like-professor:hover {
+        background: #f3e5ff;
+        border-color: #7c4dff;
+      }
+
+      .btn-like-professor.active {
+        background: linear-gradient(135deg, #7c4dff 0%, #651fff 100%);
+        border-color: #651fff;
+        color: white;
+        box-shadow: 0 6px 20px rgba(124, 77, 255, 0.4);
+      }
+
+      .btn-like-student {
+        border-color: #ffc107;
+      }
+
+      .btn-like-student:hover {
+        background: #fff8e1;
+        border-color: #ffc107;
+      }
+
+      .btn-like-student.active {
+        background: linear-gradient(135deg, #ffd54f 0%, #ffb300 100%);
+        border-color: #ff9800;
+        color: white;
+        box-shadow: 0 6px 20px rgba(255, 193, 7, 0.4);
+      }
+
+      .btn-comments {
+        border-color: #2196f3;
+      }
+
+      .btn-comments:hover {
+        background: #e3f2fd;
+        border-color: #2196f3;
+      }
+
+      .btn-suggest {
+        border-color: #4caf50;
+      }
+
+      .btn-suggest:hover {
+        background: #e8f5e9;
+        border-color: #4caf50;
+      }
+
+      .like-count,
+      .comment-count {
+        position: absolute;
+        top: -8px;
+        right: -8px;
+        background: #5548d9;
+        color: white;
+        border-radius: 50%;
+        width: 24px;
+        height: 24px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.75rem;
+        font-weight: bold;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+      }
+
+      /* Pulse Animation for Like */
+      @keyframes pulse {
+        0% {
+          transform: scale(1);
+        }
+        50% {
+          transform: scale(1.15);
+        }
+        100% {
+          transform: scale(1);
+        }
+      }
+
+      .btn-like.pulse {
+        animation: pulse 0.6s ease;
+      }
+
+      /* Feedback Stats - Updated */
+      .feedback-stats {
+        display: flex;
+        gap: 2rem;
+        padding: 1.5rem;
+        background: #f8f9fa;
+        border-radius: 12px;
+        justify-content: space-around;
+      }
+
+      .stat-item {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 0.5rem;
+      }
+
+      .stat-item .stat-icon {
+        font-size: 2rem;
+      }
+
+      .stat-item .stat-value {
+        font-size: 1.5rem;
+        font-weight: bold;
+        color: #5548d9;
+      }
+
+      .stat-item .stat-label {
+        font-size: 0.875rem;
+        color: #666;
+      }
+
+      /* Comments Modal */
+      .comments-modal-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.6);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 2000;
+        padding: 1rem;
+      }
+
+      .comments-modal-container {
+        background: white;
+        border-radius: 16px;
+        max-width: 700px;
+        width: 100%;
+        max-height: 80vh;
+        display: flex;
+        flex-direction: column;
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+      }
+
+      .modal-header {
+        padding: 1.5rem;
+        border-bottom: 2px solid #e0e0e0;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+
+      .modal-header h3 {
+        margin: 0;
+        font-size: 1.5rem;
+        color: #2d3748;
+      }
+
+      .btn-close-modal {
+        background: none;
+        border: none;
+        font-size: 1.5rem;
+        cursor: pointer;
+        color: #666;
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        transition: all 0.2s;
+      }
+
+      .btn-close-modal:hover {
+        background: #f0f0f0;
+        color: #333;
+      }
+
+      .modal-body {
+        padding: 1.5rem;
+        overflow-y: auto;
+        flex: 1;
+      }
+
+      .add-comment-form {
+        margin-bottom: 2rem;
+      }
+
+      .comment-textarea {
+        width: 100%;
+        padding: 1rem;
+        border: 2px solid #e0e0e0;
+        border-radius: 12px;
+        font-size: 0.95rem;
+        font-family: inherit;
+        resize: vertical;
+        margin-bottom: 1rem;
+        transition: border-color 0.3s;
+      }
+
+      .comment-textarea:focus {
+        outline: none;
+        border-color: #5548d9;
+      }
+
+      .btn-submit-comment {
+        background: linear-gradient(135deg, #5548d9 0%, #7c4dff 100%);
+        color: white;
+        border: none;
+        padding: 0.75rem 1.5rem;
+        border-radius: 8px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s;
+      }
+
+      .btn-submit-comment:hover:not(:disabled) {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(85, 72, 217, 0.3);
+      }
+
+      .btn-submit-comment:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+      }
+
+      .comments-list {
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+      }
+
+      .no-comments {
+        text-align: center;
+        padding: 3rem 1rem;
+        color: #999;
+      }
+
+      .comment-item {
+        padding: 1rem;
+        background: #f8f9fa;
+        border-radius: 12px;
+        border-left: 4px solid #5548d9;
+      }
+
+      .comment-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 0.75rem;
+      }
+
+      .comment-author {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+      }
+
+      .author-avatar {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #5548d9 0%, #7c4dff 100%);
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: bold;
+        font-size: 1.1rem;
+      }
+
+      .author-info {
+        display: flex;
+        flex-direction: column;
+      }
+
+      .author-name {
+        font-weight: 600;
+        color: #2d3748;
+      }
+
+      .comment-date {
+        font-size: 0.8rem;
+        color: #999;
+      }
+
+      .btn-delete-comment {
+        background: none;
+        border: none;
+        cursor: pointer;
+        font-size: 1.2rem;
+        padding: 0.25rem 0.5rem;
+        border-radius: 4px;
+        transition: background 0.2s;
+      }
+
+      .btn-delete-comment:hover {
+        background: #ffe0e0;
+      }
+
+      .comment-content {
+        padding-left: 3rem;
+      }
+
+      .comment-content p {
+        margin: 0;
+        color: #4a5568;
+        line-height: 1.6;
       }
 
       /* Content Section */
@@ -977,6 +1423,12 @@ export class MaterialDetailComponent implements OnInit {
   showSuggestionsModal = signal(false);
   isGeneratingQuiz = signal(false);
 
+  // Like animation
+  likeAnimation = signal(false);
+
+  // Comments modal
+  showCommentsModal = signal(false);
+
   // Comments
   comments = signal<Comment[]>([]);
   newCommentText = '';
@@ -1125,6 +1577,10 @@ export class MaterialDetailComponent implements OnInit {
     const mat = this.material();
     if (!mat) return;
 
+    // Trigger animation
+    this.likeAnimation.set(true);
+    setTimeout(() => this.likeAnimation.set(false), 600);
+
     this.materialService.toggleProfessorFeedback(mat.id).subscribe({
       next: (response) => {
         // Update material locally
@@ -1144,6 +1600,10 @@ export class MaterialDetailComponent implements OnInit {
   toggleStudentFeedback() {
     const mat = this.material();
     if (!mat) return;
+
+    // Trigger animation
+    this.likeAnimation.set(true);
+    setTimeout(() => this.likeAnimation.set(false), 600);
 
     this.materialService.toggleStudentFeedback(mat.id).subscribe({
       next: (response) => {
@@ -1176,6 +1636,14 @@ export class MaterialDetailComponent implements OnInit {
 
   addSuggestion() {
     this.showSuggestionsModal.set(true);
+  }
+
+  openCommentsModal() {
+    this.showCommentsModal.set(true);
+  }
+
+  closeCommentsModal() {
+    this.showCommentsModal.set(false);
   }
 
   getSafeHtml(html: string): SafeHtml {
