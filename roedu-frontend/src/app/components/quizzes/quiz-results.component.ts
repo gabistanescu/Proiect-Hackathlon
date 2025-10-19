@@ -18,6 +18,9 @@ interface QuizResult {
     ai_strengths?: string[];
     ai_improvements?: string[];
     ai_suggestions?: string[];
+    reported_status?: string;
+    reported_reason?: string;
+    professor_feedback?: string;
   }};
 }
 
@@ -146,14 +149,18 @@ interface QuizResult {
                   </ul>
                 </div>
 
-                <!-- Report AI Evaluation Button -->
+                <!-- Report AI Evaluation Button / Status -->
                 <div class="report-ai-actions">
-                  <button class="btn btn-warning" (click)="openReportForm(question.id)">
+                  <button *ngIf="!hasReportForQuestion(question.id)" class="btn btn-warning" (click)="openReportForm(question.id)">
                     🚩 Raportează Evaluare AI
                   </button>
+                  <div *ngIf="hasReportForQuestion(question.id)" class="report-status-badge" [ngClass]="'status-' + getReportStatus(question.id)">
+                    <span class="status-icon">{{ getReportStatusIcon(question.id) }}</span>
+                    <span class="status-text">{{ getReportStatusText(question.id) }}</span>
+                  </div>
                 </div>
 
-                <!-- Report AI Evaluation Form -->
+                <!-- Report Form (if opening) -->
                 <div *ngIf="isReportingQuestion === question.id" class="report-ai-form">
                   <h5>🚩 Raportează Evaluare AI</h5>
                   <p class="form-help">Explică de ce crezi că evaluarea AI nu e corectă</p>
@@ -170,6 +177,16 @@ interface QuizResult {
                     <button class="btn btn-primary" (click)="submitReportEvaluation(question.id)">
                       ✓ Trimite Raport
                     </button>
+                  </div>
+                </div>
+
+                <!-- Report Display Section (if reported) -->
+                <div *ngIf="hasReportForQuestion(question.id)" class="report-display">
+                  <h5>📋 Raport Dispute</h5>
+                  <div class="report-info">
+                    <p><strong>Motiv raportare:</strong></p>
+                    <p class="reason-text">{{ getReportReason(question.id) }}</p>
+                    <p><strong>Status:</strong> <span class="status-badge" [ngClass]="'badge-' + getReportStatus(question.id)">{{ getReportStatusText(question.id) }}</span></p>
                   </div>
                 </div>
               </div>
@@ -687,62 +704,70 @@ interface QuizResult {
       text-align: right;
     }
 
-    .report-ai-form {
+    .report-status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 12px;
+      border-radius: 20px;
+      font-size: 13px;
+      font-weight: 600;
+      color: white;
+      margin-left: 10px;
+    }
+
+    .report-status-badge.status-pending { background-color: #ff9800; }
+    .report-status-badge.status-approved { background-color: #4caf50; }
+    .report-status-badge.status-rejected { background-color: #f44336; }
+    .report-status-badge.status-resolved { background-color: #2196f3; }
+    .report-status-badge.status-disputed { background-color: #667eea; }
+    .report-status-badge.status-closed { background-color: #9e9e9e; }
+    .report-status-badge.status-cancelled { background-color: #f44336; }
+
+    .report-display {
       margin-top: 20px;
-      padding: 20px;
+      padding: 15px;
       background: #f9f9f9;
       border-radius: 6px;
       border: 1px solid #eee;
     }
 
-    .report-ai-form h5 {
-      margin-top: 0;
-      margin-bottom: 10px;
+    .report-display h5 {
+      margin: 0 0 10px 0;
       font-size: 15px;
       color: #333;
     }
 
-    .form-help {
-      font-size: 12px;
-      color: #666;
-      margin-bottom: 10px;
-    }
-
-    .form-textarea {
-      width: 100%;
-      padding: 10px;
-      border: 1px solid #ccc;
-      border-radius: 4px;
+    .report-info {
       font-size: 13px;
-      line-height: 1.6;
-      resize: vertical;
-      min-height: 80px;
-      box-sizing: border-box;
+      color: #555;
     }
 
-    .form-actions {
-      display: flex;
-      justify-content: flex-end;
-      gap: 10px;
-      margin-top: 15px;
+    .report-info p {
+      margin: 0 0 8px 0;
     }
 
+    .reason-text { font-style: italic; color: #333; margin-bottom: 10px; }
+
+    .status-badge { display: inline-block; padding: 4px 10px; border-radius: 12px; font-size: 12px; font-weight: 600; color: white; }
+    .status-badge.badge-pending { background-color: #ff9800; }
+    .status-badge.badge-approved { background-color: #4caf50; }
+    .status-badge.badge-rejected { background-color: #f44336; }
+    .status-badge.badge-resolved { background-color: #2196f3; }
+    .status-badge.badge-disputed { background-color: #667eea; }
+    .status-badge.badge-closed { background-color: #9e9e9e; }
+    .status-badge.badge-cancelled { background-color: #f44336; }
+
+    .report-ai-form { margin-top: 20px; padding: 20px; background: #f9f9f9; border-radius: 6px; border: 1px solid #eee; }
+    .report-ai-form h5 { margin: 0 0 10px 0; font-size: 15px; color: #333; }
+    .form-help { font-size: 12px; color: #666; margin-bottom: 10px; }
+    .form-textarea { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px; font-size: 13px; line-height: 1.6; resize: vertical; min-height: 80px; box-sizing: border-box; }
+    .form-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 15px; }
     @media (max-width: 768px) {
-      .results-header {
-        flex-direction: column;
-      }
-
-      .question-header {
-        flex-direction: column;
-      }
-
-      .question-content {
-        grid-template-columns: 1fr;
-      }
-
-      .action-buttons {
-        flex-direction: column;
-      }
+      .results-header { flex-direction: column; }
+      .question-header { flex-direction: column; }
+      .question-content { grid-template-columns: 1fr; }
+      .action-buttons { flex-direction: column; }
     }
   `]
 })
@@ -866,8 +891,135 @@ export class QuizResultsComponent implements OnInit {
   }
 
   downloadResults(): void {
-    // Placeholder for PDF download functionality
-    alert('Funcționalitate în dezvoltare');
+    if (!this.result || !this.quiz) {
+      alert('Nu sunt date disponibile pentru descărcare');
+      return;
+    }
+
+    // Generate PDF content as HTML
+    const content = this.generateResultsHTML();
+    
+    // Create a temporary element to hold the content
+    const element = document.createElement('div');
+    element.innerHTML = content;
+    element.style.display = 'none';
+    document.body.appendChild(element);
+
+    // Use a library-free approach: print to PDF
+    // Open in new window and print
+    const printWindow = window.open('', '', 'width=800,height=600');
+    if (printWindow) {
+      printWindow.document.write(content);
+      printWindow.document.close();
+      
+      setTimeout(() => {
+        printWindow.focus();
+        printWindow.print();
+        printWindow.close();
+      }, 250);
+    }
+
+    // Cleanup
+    document.body.removeChild(element);
+  }
+
+  private generateResultsHTML(): string {
+    const quizTitle = this.quiz?.title || 'Test';
+    const score = this.getScore();
+    const maxScore = this.result?.attempt?.max_score || 0;
+    const actualScore = this.result?.attempt?.score || 0;
+
+    let html = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="UTF-8">
+        <title>Rezultate Test - ${quizTitle}</title>
+        <style>
+          body { font-family: Arial, sans-serif; margin: 20px; color: #333; }
+          h1 { color: #667eea; text-align: center; border-bottom: 2px solid #667eea; padding-bottom: 10px; }
+          .header { background: #f5f5f5; padding: 15px; border-radius: 6px; margin-bottom: 20px; }
+          .score-section { background: ${score >= 70 ? '#d4edda' : score >= 50 ? '#fff3cd' : '#f8d7da'}; 
+                          padding: 15px; border-radius: 6px; margin-bottom: 20px; }
+          .score-value { font-size: 36px; font-weight: bold; color: ${score >= 70 ? '#155724' : score >= 50 ? '#856404' : '#721c24'}; }
+          .question { page-break-inside: avoid; margin-bottom: 30px; border: 1px solid #ddd; padding: 15px; border-radius: 6px; }
+          .question-title { font-weight: bold; margin-bottom: 10px; }
+          .correct-answer { color: #4caf50; margin: 5px 0; }
+          .student-answer { color: #2196f3; margin: 5px 0; }
+          .score-breakdown { background: #f9f9f9; padding: 10px; border-radius: 4px; margin: 10px 0; }
+          .footer { text-align: center; margin-top: 30px; color: #999; font-size: 12px; border-top: 1px solid #ccc; padding-top: 10px; }
+        </style>
+      </head>
+      <body>
+        <h1>📊 Rezultate Test</h1>
+        
+        <div class="header">
+          <p><strong>Test:</strong> ${quizTitle}</p>
+          <p><strong>Data:</strong> ${new Date().toLocaleDateString('ro-RO')}</p>
+          <p><strong>Timp:</strong> ${new Date().toLocaleTimeString('ro-RO')}</p>
+        </div>
+
+        <div class="score-section">
+          <p style="margin: 0 0 10px 0;">Scor Final:</p>
+          <div class="score-value">${score.toFixed(1)}%</div>
+          <p style="margin: 10px 0 0 0;">${actualScore.toFixed(1)} din ${maxScore.toFixed(1)} puncte</p>
+        </div>
+
+        <h2>Revizuire Răspunsuri</h2>
+    `;
+
+    // Add each question
+    this.quiz?.questions.forEach((question: any, index: number) => {
+      const aiEval = this.result?.ai_evaluations?.[question.id];
+      const correctAnswers = this.result?.correct_answers[question.id] || [];
+      const studentAnswers = this.result?.student_answers[question.id] || [];
+      const questionScore = this.result?.question_scores[question.id] || 0;
+
+      html += `
+        <div class="question">
+          <div class="question-title">${index + 1}. ${question.question_text}</div>
+          <p><strong>Tip:</strong> ${this.getQuestionTypeLabel(question.question_type)}</p>
+          <p><strong>Scor:</strong> ${questionScore.toFixed(1)} / ${question.points}</p>
+          
+          <div class="correct-answer">
+            <strong>Răspunsuri corecte:</strong> ${Array.isArray(correctAnswers) ? correctAnswers.join(', ') : correctAnswers}
+          </div>
+          
+          <div class="student-answer">
+            <strong>Răspunsul tău:</strong> ${Array.isArray(studentAnswers) ? studentAnswers.join(', ') : studentAnswers}
+          </div>
+      `;
+
+      // Add AI evaluation if available
+      if (aiEval) {
+        html += `
+          <div class="score-breakdown">
+            <strong>Evaluare AI:</strong>
+            <p>${aiEval.ai_feedback}</p>
+        `;
+        if (aiEval.ai_score_breakdown) {
+          html += `<p><strong>Detalii:</strong>`;
+          Object.entries(aiEval.ai_score_breakdown).forEach(([key, value]: any) => {
+            const labelMap: any = { 'correctness': 'Corectitudine', 'completeness': 'Completitudine', 'clarity': 'Claritate' };
+            html += ` ${labelMap[key] || key}: ${value},`;
+          });
+          html += `</p>`;
+        }
+        html += `</div>`;
+      }
+
+      html += `</div>`;
+    });
+
+    html += `
+        <div class="footer">
+          <p>Generat automat - RoEdu Educational Platform</p>
+        </div>
+      </body>
+      </html>
+    `;
+
+    return html;
   }
 
   getScoreBreakdownItems(breakdown: { [key: string]: number } | undefined): { label: string, value: number }[] {
@@ -908,15 +1060,69 @@ export class QuizResultsComponent implements OnInit {
     }
 
     this.quizService.reportAIEvaluation(this.result.attempt.id, questionId, this.reportReason).subscribe({
-      next: () => {
-        alert('Evaluarea AI a fost raportată cu succes!');
+      next: (report) => {
+        // Update local state with new report data
+        if (this.result && this.result.ai_evaluations) {
+          const aiEval = this.result.ai_evaluations[questionId];
+          if (aiEval) {
+            // Update with report status and reason
+            aiEval.reported_status = report.status;
+            aiEval.reported_reason = report.reason;
+            aiEval.professor_feedback = report.professor_feedback;
+          }
+        }
+        
+        // Close form and reset
         this.isReportingQuestion = null;
         this.reportReason = '';
+        
+        alert('Evaluarea AI a fost raportată cu succes!');
       },
       error: (error) => {
         console.error('Eroare la raportarea evaluării AI:', error);
         alert('Nu s-a putut raporta evaluarea AI. Te rog încearcă din nou.');
       }
     });
+  }
+
+  hasReportForQuestion(questionId: number): boolean {
+    if (!this.result) return false;
+    return !!this.result.ai_evaluations?.[questionId]?.reported_reason;
+  }
+
+  getReportStatus(questionId: number): string {
+    if (!this.result) return 'closed';
+    return this.result.ai_evaluations?.[questionId]?.reported_status || 'closed';
+  }
+
+  getReportStatusIcon(questionId: number): string {
+    if (!this.result) return '❓';
+    const status = this.result.ai_evaluations?.[questionId]?.reported_status;
+    if (status === 'pending') return '⚙️';
+    if (status === 'approved') return '✅';
+    if (status === 'rejected') return '❌';
+    if (status === 'resolved') return '✅';
+    if (status === 'disputed') return '⚖️';
+    if (status === 'closed') return '🔒';
+    if (status === 'cancelled') return '❌';
+    return '❓';
+  }
+
+  getReportStatusText(questionId: number): string {
+    if (!this.result) return 'Închis';
+    const status = this.result.ai_evaluations?.[questionId]?.reported_status;
+    if (status === 'pending') return 'În așteptare de revizuire';
+    if (status === 'approved') return 'Aprobat de profesor';
+    if (status === 'rejected') return 'Respins de profesor';
+    if (status === 'resolved') return 'Rezolvat';
+    if (status === 'disputed') return 'În dispută';
+    if (status === 'closed') return 'Închis';
+    if (status === 'cancelled') return 'Anulat';
+    return 'Închis';
+  }
+
+  getReportReason(questionId: number): string {
+    if (!this.result) return 'N/A';
+    return this.result.ai_evaluations?.[questionId]?.reported_reason || 'N/A';
   }
 }

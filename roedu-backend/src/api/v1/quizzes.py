@@ -479,7 +479,11 @@ def get_quiz_result(
             "ai_score_breakdown": json.loads(report.ai_score_breakdown) if report.ai_score_breakdown else {},
             "ai_strengths": json.loads(report.ai_strengths) if report.ai_strengths else [],
             "ai_improvements": json.loads(report.ai_improvements) if report.ai_improvements else [],
-            "ai_suggestions": json.loads(report.ai_suggestions) if report.ai_suggestions else []
+            "ai_suggestions": json.loads(report.ai_suggestions) if report.ai_suggestions else [],
+            # Add report dispute status and reason
+            "reported_status": report.status.value if report.status else None,
+            "reported_reason": report.reason if report.reason != "Auto-evaluated by AI system" else None,
+            "professor_feedback": report.professor_feedback
         }
     
     for question in quiz.questions:

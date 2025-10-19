@@ -527,7 +527,7 @@ export class QuizTakeComponent implements OnInit, OnDestroy {
     if (!this.quiz) return;
     
     const answersFormArray = new FormArray(
-      this.quiz.questions.map(() => this.fb.control('', Validators.required))
+      this.quiz.questions.map((_: any) => this.fb.control('', Validators.required))
     );
     
     this.quizForm = this.fb.group({
