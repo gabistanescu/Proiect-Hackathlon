@@ -112,20 +112,22 @@ import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
             <div class="interaction-buttons">
               <!-- Like buttons - disabled (preview only) -->
               @if (isProfessor() || material.visibility === 'public') {
-              <button 
-                class="btn-interaction btn-professor" 
+              <button
+                class="btn-interaction btn-professor"
                 disabled
-                title="Like-uri de la profesori">
+                title="Like-uri de la profesori"
+              >
                 <span class="stat-icon">💡</span>
                 <span class="stat-value">{{
                   material.feedback_professors_count
                 }}</span>
               </button>
               } @if (material.visibility === 'public') {
-              <button 
-                class="btn-interaction btn-student" 
+              <button
+                class="btn-interaction btn-student"
                 disabled
-                title="Like-uri de la elevi">
+                title="Like-uri de la elevi"
+              >
                 <span class="stat-icon">⭐</span>
                 <span class="stat-value">{{
                   material.feedback_students_count
@@ -134,10 +136,11 @@ import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
               }
 
               <!-- Comments button - disabled (preview only) -->
-              <button 
-                class="btn-interaction btn-comments" 
+              <button
+                class="btn-interaction btn-comments"
                 disabled
-                title="Comentarii">
+                title="Comentarii"
+              >
                 <span class="stat-icon">💬</span>
                 <span class="stat-value">{{
                   material.comments_count || 0

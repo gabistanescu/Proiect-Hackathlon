@@ -22,31 +22,18 @@
           >
             🏠 Acasă
           </a>
-          <a
-            routerLink="/contact"
-            routerLinkActive="active"
-            [routerLinkActiveOptions]="{ exact: true }"
-            class="nav-link"
-          >
-            ✉️ Contact
-          </a>
-          <a
-            routerLink="/about"
-            routerLinkActive="active"
-            [routerLinkActiveOptions]="{ exact: true }"
-            class="nav-link"
-          >
-            ℹ️ Despre
-          </a>
-          <a
-            *ngIf="!isLoggedIn"
-            routerLink="/how-to-access"
-            routerLinkActive="active"
-            [routerLinkActiveOptions]="{ exact: true }"
-            class="nav-link"
-          >
-            🔑 Acces
-          </a>
+
+          <!-- Secțiune pentru utilizatori NELOGAȚI -->
+          <ng-container *ngIf="!isLoggedIn">
+            <a
+              routerLink="/how-to-access"
+              routerLinkActive="active"
+              [routerLinkActiveOptions]="{ exact: true }"
+              class="nav-link"
+            >
+              🔑 Acces
+            </a>
+          </ng-container>
 
           <!-- Secțiune pentru utilizatori LOGAȚI -->
           <ng-container *ngIf="isLoggedIn">
@@ -81,18 +68,6 @@
                 ⚙️ Admin
               </a>
             </ng-container>
-          </ng-container>
-
-          <!-- Acces - doar pentru utilizatori NELOGAȚI -->
-          <ng-container *ngIf="!isLoggedIn">
-            <a
-              routerLink="/how-to-access"
-              routerLinkActive="active"
-              [routerLinkActiveOptions]="{ exact: true }"
-              class="nav-link"
-            >
-              🔑 Acces
-            </a>
           </ng-container>
 
           <!-- Separator vizual -->
