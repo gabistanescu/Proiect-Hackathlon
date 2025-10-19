@@ -533,8 +533,22 @@ import { Quiz, Question, QuestionType } from '../../models/quiz.model';
 
     .submission-steps {
       display: flex;
-      justify-content: space-around;
+      justify-content: space-between;
+      align-items: flex-start;
       margin-top: 30px;
+      gap: 20px;
+      position: relative;
+    }
+    
+    .submission-steps::before {
+      content: '';
+      position: absolute;
+      top: 25px;
+      left: 0;
+      right: 0;
+      height: 2px;
+      background: #e0e0e0;
+      z-index: 0;
     }
 
     .step {
@@ -542,35 +556,58 @@ import { Quiz, Question, QuestionType } from '../../models/quiz.model';
       flex-direction: column;
       align-items: center;
       position: relative;
+      flex: 1;
+      z-index: 1;
     }
 
     .step-icon {
-      width: 50px;
-      height: 50px;
+      width: 60px;
+      height: 60px;
       border-radius: 50%;
-      background: #e0e0e0;
+      background: white;
+      border: 3px solid #e0e0e0;
       display: flex;
       justify-content: center;
       align-items: center;
-      margin-bottom: 8px;
-      font-size: 24px;
-      color: #666;
+      margin-bottom: 16px;
+      font-size: 28px;
+      color: #999;
+      transition: all 0.3s ease;
+      flex-shrink: 0;
     }
 
     .step-icon.active {
       background: #667eea;
+      border-color: #667eea;
       color: white;
+      box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+      animation: pulse 1.5s infinite alternate;
     }
 
     .step-icon.completed {
       background: #4caf50;
+      border-color: #4caf50;
       color: white;
+      box-shadow: 0 4px 12px rgba(76, 175, 80, 0.3);
     }
 
     .step-label {
-      font-size: 12px;
+      font-size: 13px;
       color: #666;
-      font-weight: 500;
+      font-weight: 600;
+      text-align: center;
+      line-height: 1.4;
+      max-width: 110px;
+      letter-spacing: 0.3px;
+    }
+
+    .step.active .step-label {
+      color: #667eea;
+      font-weight: 700;
+    }
+
+    .step.completed .step-label {
+      color: #4caf50;
     }
 
     .step-icon .check-icon {
