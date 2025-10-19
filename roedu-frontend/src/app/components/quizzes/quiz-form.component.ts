@@ -717,15 +717,53 @@ export class QuizFormComponent implements OnInit {
   private createQuestionGroup(questionData?: any): FormGroup {
     const questionType = questionData?.question_type || QuestionType.SINGLE_CHOICE;
     
+    // Parse JSON strings from backend
+    let options: any[] = [];
+    let correctAnswers: any = [];
+    
+    // Parse options if it's a string (from backend)
+    if (questionData?.options) {
+      if (typeof questionData.options === 'string') {
+        try {
+          options = JSON.parse(questionData.options);
+        } catch {
+          options = [];
+        }
+      } else if (Array.isArray(questionData.options)) {
+        options = questionData.options;
+      }
+    }
+    
+    // Parse correct_answers if it's a string (from backend)
+    if (questionData?.correct_answers) {
+      if (typeof questionData.correct_answers === 'string') {
+        try {
+          correctAnswers = JSON.parse(questionData.correct_answers);
+        } catch {
+          correctAnswers = [];
+        }
+      } else if (Array.isArray(questionData.correct_answers)) {
+        correctAnswers = questionData.correct_answers;
+      }
+    } else if (questionData?.correct_answer) {
+      // Handle correct_answer field from form creation
+      correctAnswers = questionData.correct_answer;
+    }
+    
+    // For single_choice, correct_answer should be a string, not array
+    if (questionType === QuestionType.SINGLE_CHOICE && Array.isArray(correctAnswers)) {
+      correctAnswers = correctAnswers[0] || '';
+    }
+    
     return this.fb.group({
       question_text: [questionData?.question_text || '', Validators.required],
       question_type: [questionType, Validators.required],
-      options: [questionData?.options || []],
-      correct_answer: [questionData?.correct_answer || [], Validators.required],
+      options: [options],
+      correct_answer: [correctAnswers, Validators.required],
       explanation: [questionData?.explanation || ''],
       order: [questionData?.order || 0],
       evaluation_criteria: [questionData?.evaluation_criteria || ''],
-      points: [1, [Validators.required, Validators.min(0)]]
+      points: [questionData?.points || 1, [Validators.required, Validators.min(0)]]
     });
   }
 
