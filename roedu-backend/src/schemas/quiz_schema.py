@@ -50,8 +50,8 @@ class QuestionResponse(QuestionBase):
             try:
                 return json.loads(value)
             except (json.JSONDecodeError, TypeError):
-                return value or []
-        return value
+                return [] if value == '' else (value or [])
+        return value if value else []
 
 # Quiz Schemas
 class QuizBase(BaseModel):

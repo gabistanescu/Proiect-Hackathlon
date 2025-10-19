@@ -186,12 +186,11 @@ import { Group } from '../../models/group.model';
               <div *ngIf="isGrilaQuestion(question.get('question_type')?.value)">
                 <div class="form-group">
                   <label>Variante Răspuns *</label>
-                  <div class="options-list">
-                    <div *ngFor="let option of (question.get('options')?.value || []); let optIdx = index" 
+                  <div class="options-list" [formArrayName]="'optionsArray'">
+                    <div *ngFor="let option of question.get('optionsArray')?.value || []; let optIdx = index" 
                          class="option-input">
                       <input type="text" class="form-control" 
-                             (ngModelChange)="(question.get('options')?.value || [])[optIdx] = $event"
-                             [ngModel]="(question.get('options')?.value || [])[optIdx]"
+                             [formControlName]="optIdx"
                              placeholder="Introdu variant...">
                       <button type="button" class="btn-remove-option" 
                              (click)="removeOption(currentQuestionIndex, optIdx)">×</button>
@@ -208,13 +207,13 @@ import { Group } from '../../models/group.model';
                   <div *ngIf="getQuestionType(question) === 'single_choice'">
                     <select class="form-control" formControlName="correct_answer">
                       <option value="">Selectează</option>
-                      <option *ngFor="let option of (question.get('options')?.value || [])" [value]="option">
+                      <option *ngFor="let option of (question.get('optionsArray')?.value || [])" [value]="option">
                         {{ option }}
                       </option>
                     </select>
                   </div>
                   <div *ngIf="getQuestionType(question) === 'multiple_choice'">
-                    <div *ngFor="let option of (question.get('options')?.value || [])" class="checkbox">
+                    <div *ngFor="let option of (question.get('optionsArray')?.value || [])" class="checkbox">
                       <label>
                         <input type="checkbox"
                                [checked]="getCorrectAnswers(question).includes(option)"
@@ -717,49 +716,55 @@ export class QuizFormComponent implements OnInit {
   private createQuestionGroup(questionData?: any): FormGroup {
     const questionType = questionData?.question_type || QuestionType.SINGLE_CHOICE;
     
-    // Parse JSON strings from backend
+    // Parse JSON fields - backend should return arrays, but fallback to parsing if needed
     let options: any[] = [];
     let correctAnswers: any = [];
     
-    // Parse options if it's a string (from backend)
+    // Handle options - backend returns array from validators
     if (questionData?.options) {
-      if (typeof questionData.options === 'string') {
+      if (Array.isArray(questionData.options)) {
+        options = questionData.options;
+      } else if (typeof questionData.options === 'string') {
         try {
           options = JSON.parse(questionData.options);
         } catch {
           options = [];
         }
-      } else if (Array.isArray(questionData.options)) {
-        options = questionData.options;
       }
     }
     
-    // Parse correct_answers if it's a string (from backend)
+    // Handle correct_answers - backend returns array from validators
     if (questionData?.correct_answers) {
-      if (typeof questionData.correct_answers === 'string') {
+      if (Array.isArray(questionData.correct_answers)) {
+        correctAnswers = questionData.correct_answers;
+      } else if (typeof questionData.correct_answers === 'string') {
         try {
           correctAnswers = JSON.parse(questionData.correct_answers);
         } catch {
           correctAnswers = [];
         }
-      } else if (Array.isArray(questionData.correct_answers)) {
-        correctAnswers = questionData.correct_answers;
       }
     } else if (questionData?.correct_answer) {
-      // Handle correct_answer field from form creation
       correctAnswers = questionData.correct_answer;
     }
     
-    // For single_choice, correct_answer should be a string, not array
-    if (questionType === QuestionType.SINGLE_CHOICE && Array.isArray(correctAnswers)) {
-      correctAnswers = correctAnswers[0] || '';
+    // For single_choice, store as string
+    if (questionType === QuestionType.SINGLE_CHOICE && Array.isArray(correctAnswers) && correctAnswers.length > 0) {
+      correctAnswers = correctAnswers[0];
+    } else if (questionType === QuestionType.SINGLE_CHOICE) {
+      correctAnswers = '';
     }
+    
+    // Create FormArray for options
+    const optionsArray = this.fb.array(
+      (options || []).map(opt => this.fb.control(opt || ''))
+    );
     
     return this.fb.group({
       question_text: [questionData?.question_text || '', Validators.required],
       question_type: [questionType, Validators.required],
-      options: [options],
-      correct_answer: [correctAnswers, Validators.required],
+      optionsArray: optionsArray,
+      correct_answer: [correctAnswers || '', Validators.required],
       explanation: [questionData?.explanation || ''],
       order: [questionData?.order || 0],
       evaluation_criteria: [questionData?.evaluation_criteria || ''],
@@ -819,7 +824,7 @@ export class QuizFormComponent implements OnInit {
     
     // Reset options and evaluation_criteria based on type
     if (questionType === QuestionType.FREE_TEXT) {
-      question.patchValue({ options: [] });
+      question.patchValue({ optionsArray: [] });
     } else {
       question.patchValue({ evaluation_criteria: '' });
     }
@@ -844,16 +849,16 @@ export class QuizFormComponent implements OnInit {
 
   addOption(questionIndex: number): void {
     const question = this.questions.at(questionIndex);
-    const options = question.get('options')?.value || [];
+    const options = question.get('optionsArray')?.value || [];
     options.push('');
-    question.patchValue({ options });
+    question.patchValue({ optionsArray: options });
   }
 
   removeOption(questionIndex: number, optionIndex: number): void {
     const question = this.questions.at(questionIndex);
-    const options = question.get('options')?.value || [];
+    const options = question.get('optionsArray')?.value || [];
     options.splice(optionIndex, 1);
-    question.patchValue({ options });
+    question.patchValue({ optionsArray: options });
   }
 
   isGrilaQuestion(questionType: QuestionType): boolean {
