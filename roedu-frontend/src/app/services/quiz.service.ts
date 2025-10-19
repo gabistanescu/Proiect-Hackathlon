@@ -60,7 +60,7 @@ export class QuizService {
   }
 
   getAttemptResult(attemptId: number): Observable<any> {
-    return this.apiService.get<any>(`/quizzes/attempts/${attemptId}`);
+    return this.apiService.get<any>(`/quizzes/attempt/${attemptId}`);
   }
 
   getQuizAttempts(quizId: number): Observable<any[]> {
