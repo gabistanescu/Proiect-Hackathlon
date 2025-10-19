@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.orm import Session
-from typing import List, Optional
+from typing import List, Optional, Dict, Any
 from datetime import datetime
 import json
 import logging
@@ -639,12 +639,13 @@ def sync_timer(
 @router.post("/{attempt_id}/auto-submit", response_model=QuizAttemptResponse, status_code=status.HTTP_200_OK)
 def auto_submit_quiz_attempt(
     attempt_id: int,
+    submit_data: Optional[Dict[str, Any]] = None,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
     """
-    Auto-submit a quiz attempt when time expires
-    Marks as completed without changing answers
+    Auto-submit a quiz attempt when time expires or student submits
+    Can optionally receive answers to save before submitting
     """
     attempt = db.query(QuizAttempt).filter(QuizAttempt.id == attempt_id).first()
     if not attempt:
@@ -665,6 +666,14 @@ def auto_submit_quiz_attempt(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Attempt already submitted"
         )
+    
+    # If answers are provided in request, save them
+    if submit_data and "answers" in submit_data and submit_data["answers"]:
+        answers_dict = submit_data["answers"]
+        # Convert keys to strings if needed
+        if isinstance(answers_dict, dict):
+            answers_dict = {str(k): v for k, v in answers_dict.items()}
+        attempt.answers = json.dumps(answers_dict)
     
     # Mark as expired and completed
     attempt.is_expired = 1

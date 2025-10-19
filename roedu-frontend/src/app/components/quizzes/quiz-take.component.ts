@@ -685,8 +685,9 @@ export class QuizTakeComponent implements OnInit, OnDestroy {
     });
 
     // If we have an attempt ID, use auto-submit endpoint (includes AI evaluation)
+    // Pass answers so they get saved before evaluation
     if (this.attemptId) {
-      this.quizService.autoSubmitAttempt(this.attemptId).subscribe({
+      this.quizService.autoSubmitAttempt(this.attemptId, answersDict).subscribe({
         next: (attempt) => {
           this.router.navigate(['/quizzes/results', attempt.id]);
         },

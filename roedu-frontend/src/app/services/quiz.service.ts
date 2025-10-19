@@ -50,8 +50,9 @@ export class QuizService {
     return this.apiService.put<QuizAttempt>(`/quizzes/${attemptId}/timer-sync`, {});
   }
 
-  autoSubmitAttempt(attemptId: number): Observable<QuizAttempt> {
-    return this.apiService.post<QuizAttempt>(`/quizzes/${attemptId}/auto-submit`, {});
+  autoSubmitAttempt(attemptId: number, answers?: any): Observable<QuizAttempt> {
+    const body = answers ? { answers } : {};
+    return this.apiService.post<QuizAttempt>(`/quizzes/${attemptId}/auto-submit`, body);
   }
 
   getResults(id: number): Observable<QuizAttempt[]> {

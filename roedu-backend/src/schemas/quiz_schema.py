@@ -94,6 +94,10 @@ class QuizCopyRequest(BaseModel):
 class QuizAttemptCreate(BaseModel):
     answers: Dict[int, Union[List[str], str]]  # question_id -> selected answers (list) or free text (string)
 
+class QuizAttemptAutoSubmit(BaseModel):
+    """Auto-submit attempt with optional answers"""
+    answers: Optional[Dict[int, Union[List[str], str]]] = None  # Optional: provide answers to save before submitting
+
 class QuizAttemptResponse(BaseModel):
     id: int
     quiz_id: int
