@@ -116,6 +116,7 @@ class QuizResultResponse(BaseModel):
     correct_answers: Dict[int, List[str]]
     student_answers: Dict[int, List[str]]
     question_scores: Dict[int, float]
+    ai_evaluations: Optional[Dict[int, Any]] = None  # AI evaluation details by question_id
 
 # AI Quiz Generation
 class AIQuizGenerateRequest(BaseModel):
