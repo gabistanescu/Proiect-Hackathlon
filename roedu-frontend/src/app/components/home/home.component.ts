@@ -121,14 +121,14 @@ import { AuthService } from '../../services/auth.service';
       }
 
       .hero-subtitle {
-        color: #000000ff;
+        color: #ffffff;
         font-size: 1.25rem;
         margin-bottom: 1.5rem;
         opacity: 0.9;
       }
 
       .hero-description {
-        color: #242424ff;
+        color: #ffffff;
         font-size: 1.1rem;
         line-height: 1.6;
         margin-bottom: 2rem;

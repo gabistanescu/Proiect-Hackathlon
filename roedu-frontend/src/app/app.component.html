@@ -16,14 +16,14 @@
           <a routerLink="/" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }" class="nav-link">
             🏠 Acasă
           </a>
+          <a routerLink="/contact" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }" class="nav-link">
+            ✉️ Contact
+          </a>
           <a routerLink="/about" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }" class="nav-link">
             ℹ️ Despre
           </a>
-          <a routerLink="/how-to-access" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }" class="nav-link">
+          <a *ngIf="!isLoggedIn" routerLink="/how-to-access" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }" class="nav-link">
             🔑 Acces
-          </a>
-          <a routerLink="/contact" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }" class="nav-link">
-            ✉️ Contact
           </a>
 
           <ng-container *ngIf="isLoggedIn">
@@ -114,14 +114,14 @@
           <a routerLink="/" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }" class="mobile-nav-link" (click)="closeMobileMenu()">
             🏠 Acasă
           </a>
+          <a routerLink="/contact" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }" class="mobile-nav-link" (click)="closeMobileMenu()">
+            ✉️ Contact
+          </a>
           <a routerLink="/about" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }" class="mobile-nav-link" (click)="closeMobileMenu()">
             ℹ️ Despre
           </a>
-          <a routerLink="/how-to-access" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }" class="mobile-nav-link" (click)="closeMobileMenu()">
+          <a *ngIf="!isLoggedIn" routerLink="/how-to-access" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }" class="mobile-nav-link" (click)="closeMobileMenu()">
             🔑 Acces
-          </a>
-          <a routerLink="/contact" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }" class="mobile-nav-link" (click)="closeMobileMenu()">
-            ✉️ Contact
           </a>
 
           <ng-container *ngIf="isLoggedIn">

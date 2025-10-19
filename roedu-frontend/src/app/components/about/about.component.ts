@@ -66,7 +66,7 @@ import { RouterModule } from '@angular/router';
   styles: [
     `
       .about-container { min-height: 100vh; }
-      .hero { background: linear-gradient(135deg,#4f46e5 0%,#4338ca 100%); color:#fff; padding:3rem 1rem; text-align:center; }
+      .hero { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: #fff; padding: 3rem 1rem; text-align: center; }
       .hero-content h1 { font-size:2.5rem; margin-bottom:0.5rem; }
       .lead { max-width:800px; margin:0.5rem auto 0; color:#e6eefc; }
       .container { max-width:1100px; margin:2rem auto; padding:0 1rem; }
