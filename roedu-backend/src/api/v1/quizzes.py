@@ -450,6 +450,15 @@ def get_quiz_result(
         )
     
     # Build result
+    # Handle case where attempt hasn't been answered yet (e.g., just started)
+    if not attempt.answers or attempt.completed_at is None:
+        return {
+            "attempt": attempt,
+            "correct_answers": {},
+            "student_answers": {},
+            "question_scores": {}
+        }
+    
     student_answers = json.loads(attempt.answers)
     correct_answers = {}
     question_scores = {}
