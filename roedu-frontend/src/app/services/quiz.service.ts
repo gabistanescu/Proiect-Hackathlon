@@ -80,4 +80,15 @@ export class QuizService {
       { reason }
     );
   }
+
+  updateQuestionScore(attemptId: number, questionId: number, newScore: number, feedback: string): Observable<any> {
+    return this.apiService.put<any>(
+      `/ai_evaluation_reports/attempts/${attemptId}/questions/${questionId}/score`,
+      { 
+        status: 'resolved',
+        new_score: newScore,
+        professor_feedback: feedback
+      }
+    );
+  }
 }

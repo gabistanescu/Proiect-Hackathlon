@@ -546,28 +546,44 @@ def get_quiz_result(
         if isinstance(student_ans, str):
             student_ans = [student_ans]
         
+        # Check if professor has overridden the score
+        ai_report = None
+        for report in ai_reports:
+            if report.question_id == question.id:
+                ai_report = report
+                break
+        
+        professor_override = ai_report and ai_report.new_score is not None
+        
         # Score based on question type
         if question.question_type == QuestionType.FREE_TEXT:
-            # Check if AI evaluation exists for this question
-            ai_eval = ai_evaluations.get(question.id)
-            if ai_eval:
-                # Use AI score
-                question_scores[question.id] = ai_eval["ai_score"]
+            if professor_override:
+                # Use professor's corrected score (already in points, not percentage)
+                question_scores[question.id] = ai_report.new_score
             else:
-                # Fallback to keyword matching if no AI evaluation
-                student_text = student_ans[0] if student_ans else ""
-                score, _ = score_free_text_answer(
-                    student_text,
-                    question.evaluation_criteria or "",
-                    correct_answers[question.id]
-                )
-                question_scores[question.id] = score * question.points
+                # Check if AI evaluation exists for this question
+                ai_eval = ai_evaluations.get(question.id)
+                if ai_eval:
+                    # Use AI score
+                    question_scores[question.id] = ai_eval["ai_score"]
+                else:
+                    # Fallback to keyword matching if no AI evaluation
+                    student_text = student_ans[0] if student_ans else ""
+                    score, _ = score_free_text_answer(
+                        student_text,
+                        question.evaluation_criteria or "",
+                        correct_answers[question.id]
+                    )
+                    question_scores[question.id] = score * question.points
         else:
-            # Grila scoring
-            if set(student_ans) == set(correct_answers[question.id]):
-                question_scores[question.id] = question.points
+            # Grila scoring - professor can also override these
+            if professor_override:
+                question_scores[question.id] = ai_report.new_score
             else:
-                question_scores[question.id] = 0.0
+                if set(student_ans) == set(correct_answers[question.id]):
+                    question_scores[question.id] = question.points
+                else:
+                    question_scores[question.id] = 0.0
     
     return {
         "attempt": attempt_dict,

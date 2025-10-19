@@ -162,46 +162,102 @@ interface QuizResult {
                   </ul>
                 </div>
 
-                <!-- Report AI Evaluation Button / Status -->
-                <div class="report-ai-actions">
-                  <button *ngIf="!hasReportForQuestion(question.id)" class="btn btn-warning" (click)="openReportForm(question.id)">
-                    🚩 Raportează Evaluare AI
-                  </button>
-                  <div *ngIf="hasReportForQuestion(question.id)" class="report-status-badge" [ngClass]="'status-' + getReportStatus(question.id)">
-                    <span class="status-icon">{{ getReportStatusIcon(question.id) }}</span>
-                    <span class="status-text">{{ getReportStatusText(question.id) }}</span>
-                  </div>
-                </div>
+                        <!-- Report AI Evaluation Button / Status -->
+                        <div class="report-ai-actions">
+                          <button *ngIf="!hasReportForQuestion(question.id) && userRole === 'student'" class="btn btn-warning" (click)="openReportForm(question.id)">
+                            🚩 Raportează Evaluare AI
+                          </button>
+                          <div *ngIf="hasReportForQuestion(question.id) && userRole === 'student'" class="report-status-badge" [ngClass]="'status-' + getReportStatus(question.id)">
+                            <span class="status-icon">{{ getReportStatusIcon(question.id) }}</span>
+                            <span class="status-text">{{ getReportStatusText(question.id) }}</span>
+                          </div>
 
-                <!-- Report Form (if opening) -->
-                <div *ngIf="isReportingQuestion === question.id" class="report-ai-form">
-                  <h5>🚩 Raportează Evaluare AI</h5>
-                  <p class="form-help">Explică de ce crezi că evaluarea AI nu e corectă</p>
-                  <textarea 
-                    [(ngModel)]="reportReason"
-                    placeholder="Explică motivul raportării..."
-                    rows="4"
-                    class="form-textarea">
-                  </textarea>
-                  <div class="form-actions">
-                    <button class="btn btn-secondary" (click)="cancelReport()">
-                      ✕ Anulează
-                    </button>
-                    <button class="btn btn-primary" (click)="submitReportEvaluation(question.id)">
-                      ✓ Trimite Raport
-                    </button>
-                  </div>
-                </div>
+                          <!-- Professor Score Editor -->
+                          <button *ngIf="userRole === 'professor' && !isEditingScore.includes(question.id)" class="btn btn-info" (click)="openScoreEditor(question.id)">
+                            ✏️ Editează Nota
+                          </button>
+                        </div>
 
-                <!-- Report Display Section (if reported) -->
-                <div *ngIf="hasReportForQuestion(question.id)" class="report-display">
-                  <h5>📋 Raport Dispute</h5>
-                  <div class="report-info">
-                    <p><strong>Motiv raportare:</strong></p>
-                    <p class="reason-text">{{ getReportReason(question.id) }}</p>
-                    <p><strong>Status:</strong> <span class="status-badge" [ngClass]="'badge-' + getReportStatus(question.id)">{{ getReportStatusText(question.id) }}</span></p>
-                  </div>
-                </div>
+                        <!-- Report Form (if opening) - Students only -->
+                        <div *ngIf="isReportingQuestion === question.id && userRole === 'student'" class="report-ai-form">
+                          <h5>🚩 Raportează Evaluare AI</h5>
+                          <p class="form-help">Explică de ce crezi că evaluarea AI nu e corectă</p>
+                          <textarea 
+                            [(ngModel)]="reportReason"
+                            placeholder="Explică motivul raportării..."
+                            rows="4"
+                            class="form-textarea">
+                          </textarea>
+                          <div class="form-actions">
+                            <button class="btn btn-secondary" (click)="cancelReport()">
+                              ✕ Anulează
+                            </button>
+                            <button class="btn btn-primary" (click)="submitReportEvaluation(question.id)">
+                              ✓ Trimite Raport
+                            </button>
+                          </div>
+                        </div>
+
+                        <!-- Score Editor Form - Professors only -->
+                        <div *ngIf="isEditingScore.includes(question.id) && userRole === 'professor'" class="score-editor-form">
+                          <h5>✏️ Editează Nota - Întrebarea {{ question.id }}</h5>
+                          <p class="form-help">Schimbă nota elevului pentru această întrebare</p>
+                          
+                          <div class="score-inputs">
+                            <div class="form-group">
+                              <label>Nota nouă (0-{{ question.points }}):</label>
+                              <input type="number" 
+                                     [(ngModel)]="editScoreValue"
+                                     [min]="0" 
+                                     [max]="question.points"
+                                     step="0.1"
+                                     class="score-input">
+                            </div>
+                            
+                            <div class="form-group">
+                              <label>Feedback profesor:</label>
+                              <textarea 
+                                [(ngModel)]="editScoreFeedback"
+                                placeholder="Explică de ce ai schimbat nota..."
+                                rows="3"
+                                class="form-textarea">
+                              </textarea>
+                            </div>
+                          </div>
+                          
+                          <div class="form-actions">
+                            <button class="btn btn-secondary" (click)="cancelScoreEdit()">
+                              ✕ Anulează
+                            </button>
+                            <button class="btn btn-success" (click)="submitScoreEdit(question.id)">
+                              ✓ Salvează Nota
+                            </button>
+                          </div>
+                        </div>
+
+                        <!-- Professor Review Display -->
+                        <div *ngIf="userRole === 'professor' && hasReportForQuestion(question.id)" class="professor-review-display">
+                          <h5>📝 Revizuire Profesor</h5>
+                          <div class="review-info">
+                            <p *ngIf="getReportFeedback(question.id)" ><strong>Feedback:</strong></p>
+                            <p *ngIf="getReportFeedback(question.id)" class="feedback-text">{{ getReportFeedback(question.id) }}</p>
+                            <p *ngIf="getReportNewScore(question.id) !== null"><strong>Nota ajustată:</strong> <span class="score-badge">{{ getReportNewScore(question.id) }}/{{ question.points }} p</span></p>
+                            <p *ngIf="getReportStatus(question.id)"><strong>Status:</strong> <span class="status-badge" [ngClass]="'badge-' + getReportStatus(question.id)">{{ getReportStatusText(question.id) }}</span></p>
+                          </div>
+                        </div>
+                        
+                        <!-- Report Display Section (if reported) - Students only -->
+                        <div *ngIf="hasReportForQuestion(question.id) && userRole === 'student'" class="report-display">
+                          <h5>📋 Raport Dispute</h5>
+                          <div class="report-info">
+                            <p><strong>Motiv raportare:</strong></p>
+                            <p class="reason-text">{{ getReportReason(question.id) }}</p>
+                            <p><strong>Status:</strong> <span class="status-badge" [ngClass]="'badge-' + getReportStatus(question.id)">{{ getReportStatusText(question.id) }}</span></p>
+                            <p *ngIf="getReportFeedback(question.id)"><strong>Feedback profesor:</strong></p>
+                            <p *ngIf="getReportFeedback(question.id)" class="feedback-text">{{ getReportFeedback(question.id) }}</p>
+                            <p *ngIf="getReportNewScore(question.id) !== null"><strong>Nota ajustată:</strong> <span class="score-badge">{{ getReportNewScore(question.id) }}/{{ question.points }} p</span></p>
+                          </div>
+                        </div>
               </div>
             </div>
           </div>
@@ -823,6 +879,18 @@ interface QuizResult {
     .form-help { font-size: 12px; color: #666; margin-bottom: 10px; }
     .form-textarea { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px; font-size: 13px; line-height: 1.6; resize: vertical; min-height: 80px; box-sizing: border-box; }
     .form-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 15px; }
+    .score-editor-form { margin-top: 20px; padding: 20px; background: #f9f9f9; border-radius: 6px; border: 1px solid #eee; }
+    .score-editor-form h5 { margin: 0 0 10px 0; font-size: 15px; color: #333; }
+    .score-inputs { display: flex; flex-direction: column; gap: 15px; margin-top: 10px; }
+    .form-group { display: flex; flex-direction: column; }
+    .form-group label { font-size: 13px; color: #555; margin-bottom: 5px; }
+    .score-input { padding: 10px; border: 1px solid #ccc; border-radius: 4px; font-size: 13px; text-align: center; }
+    .feedback-text { font-style: italic; color: #333; margin-top: 5px; }
+    .professor-review-display { margin-top: 20px; padding: 15px; background: #f9f9f9; border-radius: 6px; border: 1px solid #eee; }
+    .professor-review-display h5 { margin: 0 0 10px 0; font-size: 15px; color: #333; }
+    .review-info { font-size: 13px; color: #555; }
+    .review-info p { margin: 0 0 8px 0; }
+    .score-badge { display: inline-block; padding: 4px 10px; border-radius: 12px; font-size: 12px; font-weight: 600; color: white; background: #667eea; }
     @media (max-width: 768px) {
       .results-header { flex-direction: column; }
       .question-header { flex-direction: column; }
@@ -840,6 +908,9 @@ export class QuizResultsComponent implements OnInit {
   reportReason: string = '';
   userRole: string | null = null;
   studentName: string | null = null;
+  isEditingScore: number[] = []; // Track which questions are being edited
+  editScoreValue: number | null = null;
+  editScoreFeedback: string = '';
 
   constructor(
     private route: ActivatedRoute,
@@ -1189,6 +1260,54 @@ export class QuizResultsComponent implements OnInit {
   getReportReason(questionId: number): string {
     if (!this.result) return 'N/A';
     return this.result.ai_evaluations?.[questionId]?.reported_reason || 'N/A';
+  }
+
+  getReportFeedback(questionId: number): string | null {
+    if (!this.result) return null;
+    return this.result.ai_evaluations?.[questionId]?.professor_feedback || null;
+  }
+
+  getReportNewScore(questionId: number): number | null {
+    if (!this.result) return null;
+    return this.result.question_scores[questionId] || null;
+  }
+
+  openScoreEditor(questionId: number): void {
+    this.isEditingScore.push(questionId);
+    this.editScoreValue = this.result?.question_scores[questionId] || null;
+    this.editScoreFeedback = this.result?.ai_evaluations?.[questionId]?.professor_feedback || '';
+  }
+
+  cancelScoreEdit(): void {
+    this.isEditingScore = this.isEditingScore.filter(id => id !== this.isEditingScore[this.isEditingScore.length - 1]);
+    this.editScoreValue = null;
+    this.editScoreFeedback = '';
+  }
+
+  submitScoreEdit(questionId: number): void {
+    if (this.editScoreValue === null) {
+      alert('Te rog să introduci o nota nouă.');
+      return;
+    }
+
+    if (!this.result?.attempt?.id) {
+      alert('ID-ul tentativei nu a putut fi găsit.');
+      return;
+    }
+
+    this.quizService.updateQuestionScore(this.result.attempt.id, questionId, this.editScoreValue, this.editScoreFeedback).subscribe({
+      next: (updatedResult) => {
+        this.result = updatedResult;
+        this.isEditingScore = this.isEditingScore.filter(id => id !== questionId);
+        this.editScoreValue = null;
+        this.editScoreFeedback = '';
+        alert('Nota și feedback-ul au fost salvate cu succes!');
+      },
+      error: (error) => {
+        console.error('Eroare la salvarea notei:', error);
+        alert('Nu s-a putut salva nota. Te rog încearcă din nou.');
+      }
+    });
   }
 
   getTestDuration(): string {

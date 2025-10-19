@@ -16,6 +16,61 @@ from src.services.auth_service import get_current_user
 
 router = APIRouter(tags=["ai_evaluation_reports"])
 
+def recalculate_attempt_score(db: Session, attempt_id: int):
+    """Recalculate attempt total score based on question scores and professor overrides"""
+    attempt = db.query(QuizAttempt).filter(QuizAttempt.id == attempt_id).first()
+    if not attempt:
+        return
+    
+    # Get quiz and all questions
+    from src.models.quiz import Quiz, QuestionType
+    import json
+    
+    quiz = attempt.quiz
+    if not quiz or not quiz.questions:
+        return
+    
+    student_answers = json.loads(attempt.answers) if attempt.answers else {}
+    total_score = 0
+    max_score = 0
+    
+    for question in quiz.questions:
+        max_score += question.points
+        
+        # Check if professor has override score
+        prof_override = db.query(AIEvaluationReport).filter(
+            AIEvaluationReport.quiz_attempt_id == attempt_id,
+            AIEvaluationReport.question_id == question.id,
+            AIEvaluationReport.new_score != None
+        ).first()
+        
+        if prof_override:
+            # Use professor's score
+            total_score += prof_override.new_score
+        else:
+            # Use existing calculation
+            student_ans = student_answers.get(str(question.id), [])
+            if isinstance(student_ans, str):
+                student_ans = [student_ans]
+            
+            if question.question_type == QuestionType.FREE_TEXT:
+                # Check for AI evaluation
+                ai_eval = db.query(AIEvaluationReport).filter(
+                    AIEvaluationReport.quiz_attempt_id == attempt_id,
+                    AIEvaluationReport.question_id == question.id
+                ).first()
+                if ai_eval:
+                    total_score += ai_eval.ai_score
+            else:
+                # Multiple choice
+                correct_answers = json.loads(question.correct_answers)
+                if set(student_ans) == set(correct_answers):
+                    total_score += question.points
+    
+    attempt.score = total_score
+    attempt.max_score = max_score
+    db.commit()
+
 @router.post("/attempts/{attempt_id}/questions/{question_id}/report", response_model=AIEvaluationReportResponse, status_code=status.HTTP_201_CREATED)
 def create_evaluation_report(
     attempt_id: int,
@@ -207,3 +262,72 @@ def get_student_reports(
     ).offset(skip).limit(limit).all()
     
     return reports
+
+@router.put("/attempts/{attempt_id}/questions/{question_id}/score", response_model=AIEvaluationReportResponse)
+def edit_question_score(
+    attempt_id: int,
+    question_id: int,
+    review_data: ReviewReportRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Professor edits AI score for a question directly
+    (without requiring a student report)
+    """
+    from src.models.professor import Professor
+    prof = db.query(Professor).filter(Professor.id == current_user.id).first()
+    if not prof:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only professors can edit scores"
+        )
+    
+    # Get attempt
+    attempt = db.query(QuizAttempt).filter(QuizAttempt.id == attempt_id).first()
+    if not attempt:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Attempt not found"
+        )
+    
+    # Verify professor owns the quiz
+    if attempt.quiz.professor_id != current_user.id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Not authorized to edit scores for this quiz"
+        )
+    
+    # Get or create evaluation report for this question
+    report = db.query(AIEvaluationReport).filter(
+        AIEvaluationReport.quiz_attempt_id == attempt_id,
+        AIEvaluationReport.question_id == question_id
+    ).first()
+    
+    if not report:
+        # Create new report with just professor override
+        report = AIEvaluationReport(
+            quiz_attempt_id=attempt_id,
+            question_id=question_id,
+            student_id=attempt.student_id,
+            ai_score=0,
+            ai_feedback="Manual edit by professor",
+            reason="Manual edit by professor",
+            status=EvaluationStatus.RESOLVED
+        )
+        db.add(report)
+    
+    # Update with professor's score and feedback
+    report.status = review_data.status
+    report.professor_id = current_user.id
+    report.professor_feedback = review_data.professor_feedback
+    report.new_score = review_data.new_score
+    report.reviewed_at = datetime.utcnow()
+    
+    db.commit()
+    db.refresh(report)
+    
+    # Recalculate attempt total score
+    recalculate_attempt_score(db, attempt_id)
+    
+    return report
