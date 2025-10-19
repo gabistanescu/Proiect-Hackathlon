@@ -38,6 +38,8 @@ class QuizGenerationService:
         Generate a quiz from material content
         Creates one question of each type: single_choice, multiple_choice, free_text
         
+        WITH RETRY: Attempts generation twice before raising exception
+        
         Args:
             material_title: Title of the material
             material_content: Content/text from the material
@@ -59,25 +61,42 @@ class QuizGenerationService:
             else:
                 raise Exception("Provide at least a material title for quiz generation.")
         
-        try:
-            prompt = self._build_generation_prompt(
-                material_title,
-                material_content,
-                subject,
-                grade_level
-            )
-            
-            response = self.model.generate_content(prompt)
-            response_text = response.text
-            
-            # Parse JSON from response
-            quiz_data = self._parse_quiz_response(response_text)
-            
-            return quiz_data
-            
-        except Exception as e:
-            logger.error(f"Quiz generation failed: {str(e)}")
-            raise
+        # Retry logic: attempt twice
+        max_attempts = 2
+        last_error = None
+        
+        for attempt in range(1, max_attempts + 1):
+            try:
+                logger.info(f"🔄 Attempting quiz generation (attempt {attempt}/{max_attempts})...")
+                
+                prompt = self._build_generation_prompt(
+                    material_title,
+                    material_content,
+                    subject,
+                    grade_level
+                )
+                
+                response = self.model.generate_content(prompt)
+                response_text = response.text
+                
+                # Parse JSON from response
+                quiz_data = self._parse_quiz_response(response_text)
+                
+                logger.info(f"✅ Quiz generation successful on attempt {attempt}")
+                return quiz_data
+                
+            except Exception as e:
+                last_error = e
+                logger.warning(f"⚠️  Attempt {attempt}/{max_attempts} failed: {str(e)}")
+                
+                if attempt == max_attempts:
+                    # All attempts exhausted, raise the error
+                    logger.error(f"❌ Quiz generation failed after {max_attempts} attempts: {str(e)}")
+                    raise Exception(f"Failed to generate quiz after {max_attempts} attempts: {str(e)}")
+                else:
+                    # More attempts remaining, continue the loop
+                    logger.info(f"Retrying... (attempt {attempt + 1} of {max_attempts})")
+                    continue
     
     def _build_generation_prompt(
         self,
