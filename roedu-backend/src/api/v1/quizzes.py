@@ -649,12 +649,29 @@ def generate_quiz_from_material(
     
     try:
         from src.services.quiz_generation_service import get_quiz_generation_service
+        from src.utils.pdf_extractor import extract_text_from_multiple_pdfs
+        from src.utils.helpers import parse_json_field
         quiz_gen = get_quiz_generation_service()
         
-        # Generate quiz data from material content
+        # Prepare content from material + attached PDFs
+        material_content = material.content or material.description or ""
+        
+        # Extract content from attached PDF files
+        if material.file_paths:
+            try:
+                file_paths = parse_json_field(material.file_paths)
+                if file_paths:
+                    pdf_content = extract_text_from_multiple_pdfs(file_paths)
+                    if pdf_content:
+                        material_content += f"\n\n--- Content from attached files ---\n{pdf_content}"
+            except Exception as e:
+                logger.warning(f"Failed to extract PDF content: {str(e)}")
+                # Continue anyway, just use material content
+        
+        # Generate quiz data from combined content
         quiz_data = quiz_gen.generate_quiz_from_material(
             material_title=material.title,
-            material_content=material.content or material.description or "No content",
+            material_content=material_content,
             subject=material.subject or "General Knowledge",
             grade_level=material.grade_level or 10
         )

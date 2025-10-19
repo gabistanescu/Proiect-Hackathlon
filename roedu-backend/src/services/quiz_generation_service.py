@@ -51,8 +51,13 @@ class QuizGenerationService:
         if not self.enabled:
             raise Exception("AI service not configured. Set GEMINI_API_KEY.")
         
-        if not material_content or len(material_content.strip()) < 50:
-            raise Exception("Material content too short. Provide at least 50 characters.")
+        # If content is too short, use title as basis - be more lenient
+        if not material_content or len(material_content.strip()) < 20:
+            # If content is really short, use title + default context
+            if material_title:
+                material_content = f"Tema: {material_title}. Please generate questions about this topic based on typical {grade_level} grade curriculum."
+            else:
+                raise Exception("Provide at least a material title for quiz generation.")
         
         try:
             prompt = self._build_generation_prompt(
