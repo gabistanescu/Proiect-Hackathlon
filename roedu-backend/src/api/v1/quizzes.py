@@ -692,7 +692,7 @@ def start_quiz_attempt(
     
     return new_attempt
 
-@router.put("/{attempt_id}/timer-sync", response_model=QuizAttemptResponse)
+@router.put("/attempts/{attempt_id}/timer-sync", response_model=QuizAttemptResponse)
 def sync_timer(
     attempt_id: int,
     db: Session = Depends(get_db),
@@ -735,7 +735,7 @@ def sync_timer(
     
     return attempt
 
-@router.post("/{attempt_id}/auto-submit", response_model=QuizAttemptResponse, status_code=status.HTTP_200_OK)
+@router.post("/attempts/{attempt_id}/auto-submit", response_model=QuizAttemptResponse, status_code=status.HTTP_200_OK)
 def auto_submit_quiz_attempt(
     attempt_id: int,
     submit_data: Optional[Dict[str, Any]] = None,
