@@ -25,104 +25,149 @@ import { Quiz, Question, QuestionType } from '../../models/quiz.model';
 
       <!-- Quiz Content -->
       <div *ngIf="!isLoading && quiz" class="quiz-content">
-        <!-- Header -->
-        <div class="quiz-header">
-          <div>
-            <h2>{{ quiz.title }}</h2>
-            <p class="quiz-description" *ngIf="quiz?.description">{{ quiz!.description }}</p>
+        <!-- Main Quiz UI (hidden while submitting) -->
+        <div *ngIf="!isSubmitting">
+          <!-- Header -->
+          <div class="quiz-header">
+            <div>
+              <h2>{{ quiz.title }}</h2>
+              <p class="quiz-description" *ngIf="quiz?.description">{{ quiz!.description }}</p>
+            </div>
+            <div class="timer-box" *ngIf="quiz.time_limit && quiz.time_limit > 0">
+              <div class="timer">{{ getTimeDisplay() }}</div>
+              <p class="timer-label">Timp rămas</p>
+            </div>
           </div>
-          <div class="timer-box" *ngIf="quiz.time_limit && quiz.time_limit > 0">
-            <div class="timer">{{ getTimeDisplay() }}</div>
-            <p class="timer-label">Timp rămas</p>
+
+          <div class="quiz-main">
+            <!-- Question Navigator Sidebar -->
+            <div class="navigator-sidebar">
+              <h3>Întrebări</h3>
+              <div class="question-navigator">
+                <button *ngFor="let q of quiz.questions; let i = index"
+                       class="nav-button"
+                       [class.active]="currentQuestionIndex === i"
+                       [class.answered]="answersFormArray.at(i)?.value"
+                       (click)="goToQuestion(i)">
+                  {{ i + 1 }}
+                </button>
+              </div>
+            </div>
+
+            <!-- Main Question Area -->
+            <div class="main-content">
+              <!-- Question -->
+              <div *ngIf="currentQuestion" class="question-section">
+                <div class="question-header-info">
+                  <h4>Întrebarea {{ currentQuestionIndex + 1 }} din {{ quiz?.questions?.length }}</h4>
+                  <span class="question-type" *ngIf="currentQuestion">
+                    {{ getQuestionTypeLabel(currentQuestion.question_type) }}
+                  </span>
+                </div>
+
+                <h3 class="question-text">{{ currentQuestion?.question_text }}</h3>
+
+                <!-- Question Type: Grila (Single Choice) -->
+                <div *ngIf="currentQuestion?.question_type === QuestionType.SINGLE_CHOICE" class="options">
+                  <div *ngFor="let option of getGrilaOptions(currentQuestion)" class="option">
+                    <label class="radio-label">
+                      <input type="radio" 
+                             name="single"
+                             [value]="option"
+                             [formControl]="getFormControl(currentQuestionIndex)"
+                             (change)="toggleOption(currentQuestion, option)">
+                      <span class="radio-custom"></span>
+                      {{ option }}
+                    </label>
+                  </div>
+                </div>
+
+                <!-- Question Type: Grila (Multiple Choice) -->
+                <div *ngIf="currentQuestion?.question_type === QuestionType.MULTIPLE_CHOICE" class="options">
+                  <div *ngFor="let option of getGrilaOptions(currentQuestion)" class="option">
+                    <label class="checkbox-label">
+                      <input type="checkbox"
+                             [checked]="isMultipleChoiceSelected(option)"
+                             (change)="toggleOption(currentQuestion, option)">
+                      <span class="checkbox-custom"></span>
+                      {{ option }}
+                    </label>
+                  </div>
+                </div>
+
+                <!-- Question Type: Free Text -->
+                <div *ngIf="currentQuestion?.question_type === QuestionType.FREE_TEXT" class="free-text">
+                  <textarea class="textarea" 
+                           placeholder="Scrie răspunsul tău..."
+                           [formControl]="getFormControl(currentQuestionIndex)"
+                           (blur)="saveAnswer()">
+                  </textarea>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Navigation Buttons -->
+          <div class="navigation-buttons">
+            <button class="btn btn-secondary" 
+                   (click)="previousQuestion()"
+                   *ngIf="currentQuestionIndex > 0">
+              ← Înapoi
+            </button>
+            
+            <button class="btn btn-secondary"
+                   (click)="nextQuestion()"
+                   *ngIf="currentQuestionIndex < (quiz?.questions?.length || 0) - 1"
+                   [disabled]="currentQuestionIndex === (quiz?.questions?.length || 0) - 1">
+              Înainte →
+            </button>
+
+            <button class="btn btn-primary" 
+                   (click)="submitQuiz()"
+                   *ngIf="currentQuestionIndex === (quiz?.questions?.length || 0) - 1"
+                   [disabled]="isSubmitting || quizForm.invalid">
+              {{ isSubmitting ? 'Se trimit răspunsurile...' : 'Trimite Răspunsurile' }}
+            </button>
           </div>
         </div>
 
-        <div class="quiz-main">
-          <!-- Question Navigator Sidebar -->
-          <div class="navigator-sidebar">
-            <h3>Întrebări</h3>
-            <div class="question-navigator">
-              <button *ngFor="let q of quiz.questions; let i = index"
-                     class="nav-button"
-                     [class.active]="currentQuestionIndex === i"
-                     [class.answered]="answersFormArray.at(i)?.value"
-                     (click)="goToQuestion(i)">
-                {{ i + 1 }}
-              </button>
+        <!-- Submission Progress State -->
+        <div *ngIf="isSubmitting" class="submission-state">
+          <div class="submission-content">
+            <div class="ai-brain-container">
+              <div class="brain-icon" [class.pulsing]="submissionStep >= 2">🧠</div>
             </div>
-          </div>
-
-          <!-- Main Question Area -->
-          <div class="main-content">
-            <!-- Question -->
-            <div *ngIf="currentQuestion" class="question-section">
-              <div class="question-header-info">
-                <h4>Întrebarea {{ currentQuestionIndex + 1 }} din {{ quiz?.questions?.length }}</h4>
-                <span class="question-type" *ngIf="currentQuestion">
-                  {{ getQuestionTypeLabel(currentQuestion.question_type) }}
-                </span>
-              </div>
-
-              <h3 class="question-text">{{ currentQuestion?.question_text }}</h3>
-
-              <!-- Question Type: Grila (Single Choice) -->
-              <div *ngIf="currentQuestion?.question_type === QuestionType.SINGLE_CHOICE" class="options">
-                <div *ngFor="let option of getGrilaOptions(currentQuestion)" class="option">
-                  <label class="radio-label">
-                    <input type="radio" 
-                           name="single"
-                           [value]="option"
-                           [formControl]="getFormControl(currentQuestionIndex)"
-                           (change)="toggleOption(currentQuestion, option)">
-                    <span class="radio-custom"></span>
-                    {{ option }}
-                  </label>
+            
+            <h2>Se evaluează răspunsurile tale</h2>
+            
+            <p class="submission-description">
+              Te rog așteptă în timp ce procesez răspunsurile tale. Aceasta poate dura câteva momente deoarece folosim AI pentru a evalua răspunsurile libere.
+            </p>
+            
+            <div class="submission-steps">
+              <div class="step" [class.active]="submissionStep >= 1" [class.completed]="submissionStep > 1">
+                <div class="step-icon">
+                  <span *ngIf="submissionStep > 1" class="check-icon">✓</span>
+                  <span *ngIf="submissionStep <= 1" class="upload-icon">📤</span>
                 </div>
+                <span class="step-label">Se transmit răspunsurile</span>
               </div>
-
-              <!-- Question Type: Grila (Multiple Choice) -->
-              <div *ngIf="currentQuestion?.question_type === QuestionType.MULTIPLE_CHOICE" class="options">
-                <div *ngFor="let option of getGrilaOptions(currentQuestion)" class="option">
-                  <label class="checkbox-label">
-                    <input type="checkbox"
-                           [checked]="isMultipleChoiceSelected(option)"
-                           (change)="toggleOption(currentQuestion, option)">
-                    <span class="checkbox-custom"></span>
-                    {{ option }}
-                  </label>
-                </div>
-              </div>
-
-              <!-- Question Type: Free Text -->
-              <div *ngIf="currentQuestion?.question_type === QuestionType.FREE_TEXT" class="free-text">
-                <textarea class="textarea" 
-                         placeholder="Scrie răspunsul tău..."
-                         [formControl]="getFormControl(currentQuestionIndex)"
-                         rows="6"></textarea>
-              </div>
-            </div>
-
-            <!-- Navigation Buttons -->
-            <div class="navigation-buttons">
-              <button class="btn btn-secondary" 
-                     (click)="previousQuestion()"
-                     [disabled]="currentQuestionIndex === 0">
-                ← Înapoi
-              </button>
               
-              <button class="btn btn-secondary"
-                     (click)="nextQuestion()"
-                     *ngIf="currentQuestionIndex < (quiz?.questions?.length || 0) - 1"
-                     [disabled]="currentQuestionIndex === (quiz?.questions?.length || 0) - 1">
-                Înainte →
-              </button>
-
-              <button class="btn btn-primary" 
-                     (click)="submitQuiz()"
-                     *ngIf="currentQuestionIndex === (quiz?.questions?.length || 0) - 1"
-                     [disabled]="isSubmitting || quizForm.invalid">
-                {{ isSubmitting ? 'Se trimit răspunsurile...' : 'Trimite Răspunsurile' }}
-              </button>
+              <div class="step" [class.active]="submissionStep >= 2" [class.completed]="submissionStep > 2">
+                <div class="step-icon">
+                  <span *ngIf="submissionStep > 2" class="check-icon">✓</span>
+                  <span *ngIf="submissionStep <= 2" class="brain-icon-step">🧠</span>
+                </div>
+                <span class="step-label">Se evaluează răspunsurile</span>
+              </div>
+              
+              <div class="step" [class.active]="submissionStep >= 3" [class.completed]="submissionStep > 3">
+                <div class="step-icon">
+                  <span *ngIf="submissionStep > 3" class="check-icon">✓</span>
+                  <span *ngIf="submissionStep <= 3" class="calc-icon">🧮</span>
+                </div>
+                <span class="step-label">Se calculează scorul final</span>
+              </div>
             </div>
           </div>
         </div>
@@ -437,6 +482,114 @@ import { Quiz, Question, QuestionType } from '../../models/quiz.model';
       background: #e0e0e0;
     }
 
+    .submission-state {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 400px;
+      background: #f5f5f5;
+      padding: 20px;
+    }
+
+    .submission-content {
+      text-align: center;
+      padding: 30px;
+      background: white;
+      border-radius: 10px;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+      max-width: 500px;
+      width: 100%;
+    }
+
+    .ai-brain-container {
+      margin-bottom: 20px;
+    }
+
+    .brain-icon {
+      font-size: 80px;
+      color: #667eea;
+      animation: pulse 1.5s infinite alternate;
+    }
+
+    .brain-icon.pulsing {
+      animation: pulse 1.5s infinite alternate;
+    }
+
+    @keyframes pulse {
+      from { transform: scale(1); opacity: 0.8; }
+      to { transform: scale(1.1); opacity: 1; }
+    }
+
+    .submission-content h2 {
+      margin-top: 0;
+      margin-bottom: 10px;
+      color: #333;
+    }
+
+    .submission-description {
+      color: #666;
+      margin-bottom: 25px;
+      font-size: 14px;
+    }
+
+    .submission-steps {
+      display: flex;
+      justify-content: space-around;
+      margin-top: 30px;
+    }
+
+    .step {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      position: relative;
+    }
+
+    .step-icon {
+      width: 50px;
+      height: 50px;
+      border-radius: 50%;
+      background: #e0e0e0;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      margin-bottom: 8px;
+      font-size: 24px;
+      color: #666;
+    }
+
+    .step-icon.active {
+      background: #667eea;
+      color: white;
+    }
+
+    .step-icon.completed {
+      background: #4caf50;
+      color: white;
+    }
+
+    .step-label {
+      font-size: 12px;
+      color: #666;
+      font-weight: 500;
+    }
+
+    .step-icon .check-icon {
+      font-size: 28px;
+    }
+
+    .step-icon .upload-icon {
+      font-size: 28px;
+    }
+
+    .step-icon .brain-icon-step {
+      font-size: 28px;
+    }
+
+    .step-icon .calc-icon {
+      font-size: 28px;
+    }
+
     @media (max-width: 768px) {
       .quiz-header {
         flex-direction: column;
@@ -472,6 +625,7 @@ export class QuizTakeComponent implements OnInit, OnDestroy {
   timeLeft = 0;
   timerInterval: any;
   attemptId: number | null = null;  // Store attempt ID
+  submissionStep = 0; // 0: Initial, 1: Submitting, 2: Evaluating, 3: Calculating
   
   QuestionType = QuestionType;
 
@@ -675,6 +829,7 @@ export class QuizTakeComponent implements OnInit, OnDestroy {
     }
 
     this.isSubmitting = true;
+    this.submissionStep = 1; // Step 1: Submitting answers
     clearInterval(this.timerInterval);
     
     const answers = this.quizForm.get('answers')?.value || [];
@@ -684,27 +839,46 @@ export class QuizTakeComponent implements OnInit, OnDestroy {
       answersDict[question.id] = Array.isArray(answers[index]) ? answers[index] : [answers[index]];
     });
 
+    // Step 1 → 2: Move to evaluation step
+    setTimeout(() => {
+      this.submissionStep = 2; // Step 2: Evaluating responses (AI processing)
+    }, 500);
+
     // If we have an attempt ID, use auto-submit endpoint (includes AI evaluation)
     // Pass answers so they get saved before evaluation
     if (this.attemptId) {
       this.quizService.autoSubmitAttempt(this.attemptId, answersDict).subscribe({
         next: (attempt) => {
-          this.router.navigate(['/quizzes/results', attempt.id]);
+          // Step 2 → 3: Move to calculating final score
+          this.submissionStep = 3;
+          
+          // Final step before redirect
+          setTimeout(() => {
+            this.router.navigate(['/quizzes/results', attempt.id]);
+          }, 500);
         },
         error: () => {
           this.errorMessage = 'Nu s-au putut trimite răspunsurile. Te rog încearcă din nou.';
           this.isSubmitting = false;
+          this.submissionStep = 0;
         }
       });
     } else {
       // Fallback to old endpoint if no attempt ID (shouldn't happen)
       this.quizService.submitAttempt(this.quiz.id, answersDict).subscribe({
         next: (attempt) => {
-          this.router.navigate(['/quizzes/results', attempt.id]);
+          // Step 2 → 3: Move to calculating final score
+          this.submissionStep = 3;
+          
+          // Final step before redirect
+          setTimeout(() => {
+            this.router.navigate(['/quizzes/results', attempt.id]);
+          }, 500);
         },
         error: () => {
           this.errorMessage = 'Nu s-au putut trimite răspunsurile. Te rog încearcă din nou.';
           this.isSubmitting = false;
+          this.submissionStep = 0;
         }
       });
     }
