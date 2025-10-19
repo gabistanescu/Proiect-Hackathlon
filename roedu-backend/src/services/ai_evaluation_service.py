@@ -24,7 +24,8 @@ class AIEvaluationService:
             self.enabled = False
         else:
             genai.configure(api_key=api_key)
-            self.model = genai.GenerativeModel('gemini-pro')
+            # Use gemini-1.5-flash (latest available model, faster and cheaper than pro)
+            self.model = genai.GenerativeModel('gemini-1.5-flash')
             self.enabled = True
     
     def evaluate_free_text_answer(

@@ -752,7 +752,7 @@ def auto_submit_quiz_attempt(
                                 ai_score=ai_score,
                                 ai_feedback=ai_feedback,
                                 ai_reasoning=metadata.get("reasoning", ""),
-                                ai_model_version=metadata.get("version", "gemini-pro"),
+                                ai_model_version=metadata.get("version", "gemini-2.5-flash-preview-05-20"),
                                 ai_score_breakdown=json.dumps(metadata.get("score_breakdown", {})),
                                 ai_strengths=json.dumps(metadata.get("strengths", [])),
                                 ai_improvements=json.dumps(metadata.get("improvements", [])),

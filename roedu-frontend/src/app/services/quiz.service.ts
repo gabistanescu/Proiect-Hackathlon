@@ -73,4 +73,11 @@ export class QuizService {
       topic
     });
   }
+
+  reportAIEvaluation(attemptId: number, questionId: number, reason: string): Observable<any> {
+    return this.apiService.post<any>(
+      `/ai_evaluation_reports/attempts/${attemptId}/questions/${questionId}/report`,
+      { reason }
+    );
+  }
 }

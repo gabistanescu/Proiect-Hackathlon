@@ -1,6 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { QuizService } from '../../services/quiz.service';
 
 interface QuizResult {
@@ -23,7 +24,7 @@ interface QuizResult {
 @Component({
   selector: 'app-quiz-results',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, FormsModule],
   template: `
     <div class="results-container">
       <!-- Loading State -->
@@ -143,6 +144,33 @@ interface QuizResult {
                   <ul>
                     <li *ngFor="let suggestion of result.ai_evaluations?.[question.id]?.ai_suggestions">{{ suggestion }}</li>
                   </ul>
+                </div>
+
+                <!-- Report AI Evaluation Button -->
+                <div class="report-ai-actions">
+                  <button class="btn btn-warning" (click)="openReportForm(question.id)">
+                    🚩 Raportează Evaluare AI
+                  </button>
+                </div>
+
+                <!-- Report AI Evaluation Form -->
+                <div *ngIf="isReportingQuestion === question.id" class="report-ai-form">
+                  <h5>🚩 Raportează Evaluare AI</h5>
+                  <p class="form-help">Explică de ce crezi că evaluarea AI nu e corectă</p>
+                  <textarea 
+                    [(ngModel)]="reportReason"
+                    placeholder="Explică motivul raportării..."
+                    rows="4"
+                    class="form-textarea">
+                  </textarea>
+                  <div class="form-actions">
+                    <button class="btn btn-secondary" (click)="cancelReport()">
+                      ✕ Anulează
+                    </button>
+                    <button class="btn btn-primary" (click)="submitReportEvaluation(question.id)">
+                      ✓ Trimite Raport
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
@@ -654,6 +682,51 @@ interface QuizResult {
       background: #e0e0e0;
     }
 
+    .report-ai-actions {
+      margin-top: 15px;
+      text-align: right;
+    }
+
+    .report-ai-form {
+      margin-top: 20px;
+      padding: 20px;
+      background: #f9f9f9;
+      border-radius: 6px;
+      border: 1px solid #eee;
+    }
+
+    .report-ai-form h5 {
+      margin-top: 0;
+      margin-bottom: 10px;
+      font-size: 15px;
+      color: #333;
+    }
+
+    .form-help {
+      font-size: 12px;
+      color: #666;
+      margin-bottom: 10px;
+    }
+
+    .form-textarea {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      font-size: 13px;
+      line-height: 1.6;
+      resize: vertical;
+      min-height: 80px;
+      box-sizing: border-box;
+    }
+
+    .form-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+      margin-top: 15px;
+    }
+
     @media (max-width: 768px) {
       .results-header {
         flex-direction: column;
@@ -678,6 +751,8 @@ export class QuizResultsComponent implements OnInit {
   quiz: any = null;
   isLoading = true;
   errorMessage: string | null = null;
+  isReportingQuestion: number | null = null;
+  reportReason: string = '';
 
   constructor(
     private route: ActivatedRoute,
@@ -798,5 +873,39 @@ export class QuizResultsComponent implements OnInit {
   getScoreBreakdownItems(breakdown: { [key: string]: number } | undefined): { label: string, value: number }[] {
     if (!breakdown) return [];
     return Object.entries(breakdown).map(([label, value]) => ({ label, value }));
+  }
+
+  openReportForm(questionId: number): void {
+    this.isReportingQuestion = questionId;
+    this.reportReason = '';
+  }
+
+  cancelReport(): void {
+    this.isReportingQuestion = null;
+    this.reportReason = '';
+  }
+
+  submitReportEvaluation(questionId: number): void {
+    if (!this.reportReason.trim()) {
+      alert('Te rog să introduci un motiv pentru raportarea evaluării AI.');
+      return;
+    }
+
+    if (!this.result?.attempt?.id) {
+      alert('ID-ul tentativei nu a putut fi găsit.');
+      return;
+    }
+
+    this.quizService.reportAIEvaluation(this.result.attempt.id, questionId, this.reportReason).subscribe({
+      next: () => {
+        alert('Evaluarea AI a fost raportată cu succes!');
+        this.isReportingQuestion = null;
+        this.reportReason = '';
+      },
+      error: (error) => {
+        console.error('Eroare la raportarea evaluării AI:', error);
+        alert('Nu s-a putut raporta evaluarea AI. Te rog încearcă din nou.');
+      }
+    });
   }
 }
