@@ -12,6 +12,7 @@ from src.models.user import User
 from src.models.professor import Professor
 from typing import List
 from datetime import datetime
+from src.schemas.group_schema import StudentInGroup
 
 router = APIRouter(tags=["groups"])
 
@@ -88,12 +89,12 @@ def get_professor_groups(db: Session = Depends(get_db)):
             first_name = name_parts[0].capitalize() if name_parts else 'Student'
             last_name = name_parts[-1].capitalize() if len(name_parts) > 1 else ''
             
-            students_list.append({
-                "id": student.id,
-                "email": user.email if user else "",
-                "first_name": first_name,
-                "last_name": last_name
-            })
+            students_list.append(StudentInGroup(
+                id=student.id,
+                email=user.email if user else "",
+                first_name=first_name,
+                last_name=last_name
+            ))
         
         result.append(GroupWithStudents(
             id=group.id,
