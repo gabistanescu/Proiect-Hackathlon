@@ -1,7 +1,8 @@
-from pydantic import BaseModel, Field, ConfigDict
+from pydantic import BaseModel, Field, ConfigDict, field_validator
 from typing import Optional, List, Dict, Any
 from datetime import datetime
 from enum import Enum
+import json
 
 class EvaluationStatus(str, Enum):
     PENDING = "pending"
@@ -47,46 +48,46 @@ class AIEvaluationReportResponse(BaseModel):
     
     model_config = ConfigDict(from_attributes=True)
     
-    @property
-    def ai_score_breakdown_dict(self) -> Optional[Dict[str, Any]]:
-        """Parse ai_score_breakdown JSON if it's a string"""
-        if isinstance(self.ai_score_breakdown, str):
-            import json
+    @field_validator('ai_score_breakdown', mode='before')
+    @classmethod
+    def parse_score_breakdown(cls, v):
+        """Parse JSON string to dict"""
+        if isinstance(v, str):
             try:
-                return json.loads(self.ai_score_breakdown)
+                return json.loads(v) if v else None
             except:
                 return None
-        return self.ai_score_breakdown
+        return v
     
-    @property
-    def ai_strengths_list(self) -> List[str]:
-        """Parse ai_strengths JSON if it's a string"""
-        if isinstance(self.ai_strengths, str):
-            import json
+    @field_validator('ai_strengths', mode='before')
+    @classmethod
+    def parse_strengths(cls, v):
+        """Parse JSON string to list"""
+        if isinstance(v, str):
             try:
-                return json.loads(self.ai_strengths)
+                return json.loads(v) if v else []
             except:
                 return []
-        return self.ai_strengths or []
+        return v if v else []
     
-    @property
-    def ai_improvements_list(self) -> List[str]:
-        """Parse ai_improvements JSON if it's a string"""
-        if isinstance(self.ai_improvements, str):
-            import json
+    @field_validator('ai_improvements', mode='before')
+    @classmethod
+    def parse_improvements(cls, v):
+        """Parse JSON string to list"""
+        if isinstance(v, str):
             try:
-                return json.loads(self.ai_improvements)
+                return json.loads(v) if v else []
             except:
                 return []
-        return self.ai_improvements or []
+        return v if v else []
     
-    @property
-    def ai_suggestions_list(self) -> List[str]:
-        """Parse ai_suggestions JSON if it's a string"""
-        if isinstance(self.ai_suggestions, str):
-            import json
+    @field_validator('ai_suggestions', mode='before')
+    @classmethod
+    def parse_suggestions(cls, v):
+        """Parse JSON string to list"""
+        if isinstance(v, str):
             try:
-                return json.loads(self.ai_suggestions)
+                return json.loads(v) if v else []
             except:
                 return []
-        return self.ai_suggestions or []
+        return v if v else []
