@@ -77,4 +77,15 @@ export class AuthService {
   verifyToken(): Observable<any> {
     return this.apiService.get('/auth/verify');
   }
+
+  getUserRole(): string | null {
+    const user = this.currentUserSubject.value;
+    return user?.role || null;
+  }
+
+  getStudentName(): string | null {
+    const user = this.currentUserSubject.value;
+    if (!user) return null;
+    return user.username || user.email;
+  }
 }

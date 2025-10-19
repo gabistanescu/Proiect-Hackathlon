@@ -3,6 +3,7 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { QuizService } from '../../services/quiz.service';
+import { AuthService } from '../../services/auth.service';
 
 interface QuizResult {
   attempt: any;
@@ -43,6 +44,18 @@ interface QuizResult {
 
       <!-- Results Content -->
       <div *ngIf="!isLoading && result" class="results-content">
+        <!-- Student Info Header (especially for professors viewing) -->
+        <div *ngIf="userRole === 'professor'" class="student-info-header">
+          <div class="student-badge">
+            <span class="badge-label">Student:</span>
+            <span class="badge-value">{{ result.attempt.student_id }}</span>
+          </div>
+          <div class="test-info">
+            <span class="info-item">Data: {{ result.attempt.started_at | date: 'dd MMM yyyy, HH:mm' }}</span>
+            <span class="info-item">Timp lucrării: {{ getTestDuration() }}</span>
+          </div>
+        </div>
+
         <!-- Header with Score -->
         <div class="results-header">
           <div class="score-box">
@@ -250,6 +263,53 @@ interface QuizResult {
     .results-content {
       max-width: 900px;
       margin: 0 auto;
+    }
+
+    .student-info-header {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+      margin-bottom: 20px;
+      padding: 15px 20px;
+      background: #f0f8f4;
+      border-radius: 6px;
+      border: 1px solid #c3e6cb;
+    }
+
+    .student-badge {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .badge-label {
+      font-size: 14px;
+      color: #4caf50;
+      font-weight: 600;
+    }
+
+    .badge-value {
+      font-size: 16px;
+      font-weight: 700;
+      color: #155724;
+    }
+
+    .test-info {
+      display: flex;
+      gap: 15px;
+      font-size: 14px;
+      color: #333;
+    }
+
+    .info-item {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    .info-item .material-icons {
+      font-size: 18px;
+      color: #999;
     }
 
     .results-header {
@@ -778,11 +838,14 @@ export class QuizResultsComponent implements OnInit {
   errorMessage: string | null = null;
   isReportingQuestion: number | null = null;
   reportReason: string = '';
+  userRole: string | null = null;
+  studentName: string | null = null;
 
   constructor(
     private route: ActivatedRoute,
     private router: Router,
-    private quizService: QuizService
+    private quizService: QuizService,
+    private authService: AuthService
   ) {}
 
   ngOnInit(): void {
@@ -790,6 +853,8 @@ export class QuizResultsComponent implements OnInit {
     if (attemptId) {
       this.loadResults(attemptId);
     }
+    this.userRole = this.authService.getUserRole();
+    this.studentName = this.authService.getStudentName();
   }
 
   private loadResults(attemptId: number): void {
@@ -1124,5 +1189,15 @@ export class QuizResultsComponent implements OnInit {
   getReportReason(questionId: number): string {
     if (!this.result) return 'N/A';
     return this.result.ai_evaluations?.[questionId]?.reported_reason || 'N/A';
+  }
+
+  getTestDuration(): string {
+    if (!this.result?.attempt?.started_at || !this.result?.attempt?.ended_at) {
+      return 'N/A';
+    }
+    const durationMs = this.result.attempt.ended_at - this.result.attempt.started_at;
+    const durationMin = Math.floor(durationMs / (1000 * 60));
+    const durationSec = Math.floor((durationMs % (1000 * 60)) / 1000);
+    return `${durationMin} min ${durationSec} sec`;
   }
 }
