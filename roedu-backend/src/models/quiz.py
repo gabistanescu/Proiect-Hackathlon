@@ -22,6 +22,7 @@ class Quiz(Base):
     is_ai_generated = Column(Integer, default=0)  # Using Integer for SQLite
     professor_id = Column(Integer, ForeignKey('professors.id'), nullable=False)
     group_id = Column(Integer, ForeignKey('groups.id'), nullable=True)
+    created_by_student_id = Column(Integer, ForeignKey('students.id'), nullable=True)  # For AI-generated quizzes by students
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 

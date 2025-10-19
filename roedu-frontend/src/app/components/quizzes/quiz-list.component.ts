@@ -317,12 +317,22 @@ import { Quiz, QuestionType } from '../../models/quiz.model';
       flex-wrap: wrap;
     }
 
-    .btn {
-      flex: 1;
-      min-width: 100px;
+    .card-footer .btn {
+      flex: 0 0 auto;
+      min-width: auto;
     }
 
     @media (max-width: 768px) {
+      .page-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 15px;
+      }
+
+      .page-header h1 {
+        font-size: 24px;
+      }
+
       .quizzes-grid {
         grid-template-columns: 1fr;
       }

@@ -22,6 +22,31 @@
           >
             🏠 Acasă
           </a>
+          <a
+            routerLink="/contact"
+            routerLinkActive="active"
+            [routerLinkActiveOptions]="{ exact: true }"
+            class="nav-link"
+          >
+            ✉️ Contact
+          </a>
+          <a
+            routerLink="/about"
+            routerLinkActive="active"
+            [routerLinkActiveOptions]="{ exact: true }"
+            class="nav-link"
+          >
+            ℹ️ Despre
+          </a>
+          <a
+            *ngIf="!isLoggedIn"
+            routerLink="/how-to-access"
+            routerLinkActive="active"
+            [routerLinkActiveOptions]="{ exact: true }"
+            class="nav-link"
+          >
+            🔑 Acces
+          </a>
 
           <!-- Secțiune pentru utilizatori LOGAȚI -->
           <ng-container *ngIf="isLoggedIn">
@@ -96,6 +121,9 @@
         <div class="navbar-right">
           <ng-container *ngIf="isLoggedIn">
             <div class="user-section">
+              <!-- Notifications Bell -->
+              <app-notifications-bell></app-notifications-bell>
+
               <div class="user-dropdown" (click)="toggleDropdown()">
                 <div class="avatar">
                   <span>{{ (username || "U").charAt(0).toUpperCase() }}</span>
@@ -195,7 +223,6 @@
           >
             🏠 Acasă
           </a>
-
           <!-- Secțiune pentru utilizatori LOGAȚI -->
           <ng-container *ngIf="isLoggedIn">
             <a

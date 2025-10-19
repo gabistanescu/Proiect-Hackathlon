@@ -109,7 +109,7 @@ import { RouterModule } from '@angular/router';
       }
 
       .hero-section {
-        background: linear-gradient(135deg, #4f46e5 0%, #4338ca 100%);
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
         color: white;
         padding: 4rem 1rem;
         display: grid;

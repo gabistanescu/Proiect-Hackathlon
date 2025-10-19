@@ -192,7 +192,7 @@ import { AuthService } from '../../services/auth.service';
     }
 
     .profile-header {
-      background: linear-gradient(135deg, #4f46e5 0%, #4338ca 100%);
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
       border-radius: 1rem;
       padding: 3rem 2rem;
       display: flex;
