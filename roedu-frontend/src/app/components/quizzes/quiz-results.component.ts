@@ -102,19 +102,19 @@ interface QuizResult {
               <div *ngIf="question.question_type === 'free_text' && result.ai_evaluations?.[question.id]" class="ai-evaluation">
                 <div class="ai-header">
                   <h4>🤖 Evaluare AI</h4>
-                  <span class="ai-version">{{ result.ai_evaluations[question.id].ai_model_version }}</span>
+                  <span class="ai-version">{{ result.ai_evaluations?.[question.id]?.ai_model_version }}</span>
                 </div>
                 
                 <!-- Feedback -->
                 <div class="ai-feedback">
-                  <p>{{ result.ai_evaluations[question.id].ai_feedback }}</p>
+                  <p>{{ result.ai_evaluations?.[question.id]?.ai_feedback }}</p>
                 </div>
 
                 <!-- Score Breakdown -->
-                <div *ngIf="result.ai_evaluations[question.id].ai_score_breakdown" class="score-breakdown">
+                <div *ngIf="result.ai_evaluations?.[question.id]?.ai_score_breakdown" class="score-breakdown">
                   <h5>Detalii punctaj:</h5>
                   <div class="breakdown-items">
-                    <div class="breakdown-item" *ngFor="let item of getScoreBreakdownItems(result.ai_evaluations[question.id].ai_score_breakdown)">
+                    <div class="breakdown-item" *ngFor="let item of getScoreBreakdownItems(result.ai_evaluations?.[question.id]?.ai_score_breakdown)">
                       <span class="label">{{ item.label }}:</span>
                       <span class="value">{{ item.value }} puncte</span>
                     </div>
@@ -122,26 +122,26 @@ interface QuizResult {
                 </div>
 
                 <!-- Strengths -->
-                <div *ngIf="result.ai_evaluations[question.id].ai_strengths?.length" class="strengths">
+                <div *ngIf="result.ai_evaluations?.[question.id]?.ai_strengths?.length" class="strengths">
                   <h5>✓ Puncte forte:</h5>
                   <ul>
-                    <li *ngFor="let strength of result.ai_evaluations[question.id].ai_strengths">{{ strength }}</li>
+                    <li *ngFor="let strength of result.ai_evaluations?.[question.id]?.ai_strengths">{{ strength }}</li>
                   </ul>
                 </div>
 
                 <!-- Areas for Improvement -->
-                <div *ngIf="result.ai_evaluations[question.id].ai_improvements?.length" class="improvements">
+                <div *ngIf="result.ai_evaluations?.[question.id]?.ai_improvements?.length" class="improvements">
                   <h5>⚠ Arii de îmbunătățire:</h5>
                   <ul>
-                    <li *ngFor="let improvement of result.ai_evaluations[question.id].ai_improvements">{{ improvement }}</li>
+                    <li *ngFor="let improvement of result.ai_evaluations?.[question.id]?.ai_improvements">{{ improvement }}</li>
                   </ul>
                 </div>
 
                 <!-- Suggestions -->
-                <div *ngIf="result.ai_evaluations[question.id].ai_suggestions?.length" class="suggestions">
+                <div *ngIf="result.ai_evaluations?.[question.id]?.ai_suggestions?.length" class="suggestions">
                   <h5>💡 Sugestii pentru învățare:</h5>
                   <ul>
-                    <li *ngFor="let suggestion of result.ai_evaluations[question.id].ai_suggestions">{{ suggestion }}</li>
+                    <li *ngFor="let suggestion of result.ai_evaluations?.[question.id]?.ai_suggestions">{{ suggestion }}</li>
                   </ul>
                 </div>
               </div>
