@@ -99,8 +99,7 @@ import { Quiz, Question, QuestionType } from '../../models/quiz.model';
                 <div *ngIf="currentQuestion?.question_type === QuestionType.FREE_TEXT" class="free-text">
                   <textarea class="textarea" 
                            placeholder="Scrie răspunsul tău..."
-                           [formControl]="getFormControl(currentQuestionIndex)"
-                           (blur)="saveAnswer()">
+                           [formControl]="getFormControl(currentQuestionIndex)">
                   </textarea>
                 </div>
               </div>
