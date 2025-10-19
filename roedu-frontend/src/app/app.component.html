@@ -54,6 +54,9 @@
         <div class="navbar-right">
           <ng-container *ngIf="isLoggedIn">
             <div class="user-section">
+              <!-- Notifications Bell -->
+              <app-notifications-bell></app-notifications-bell>
+              
               <div class="user-dropdown" (click)="toggleDropdown()">
                 <div class="avatar">
                   <span>{{ (username || 'U').charAt(0).toUpperCase() }}</span>

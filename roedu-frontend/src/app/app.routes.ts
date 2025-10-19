@@ -163,6 +163,14 @@ export const routes: Routes = [
       import('./pages/feed/feed.component').then((m) => m.FeedComponent),
   },
   {
+    path: 'notifications',
+    canActivate: [AuthGuard],
+    loadComponent: () =>
+      import('./pages/notifications/notifications.component').then(
+        (m) => m.NotificationsComponent
+      ),
+  },
+  {
     path: '**',
     redirectTo: '',
   },

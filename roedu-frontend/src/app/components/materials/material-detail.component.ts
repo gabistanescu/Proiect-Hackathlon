@@ -1133,6 +1133,11 @@ export class MaterialDetailComponent implements OnInit {
           user_has_feedback: response.has_feedback,
           feedback_professors_count: response.total_count,
         });
+        
+        // Show success message
+        if (response.has_feedback) {
+          console.log('Feedback trimis! Profesorul va primi o notificare.');
+        }
       },
       error: (err) => {
         console.error('Error toggling professor feedback:', err);
@@ -1153,6 +1158,11 @@ export class MaterialDetailComponent implements OnInit {
           user_has_feedback: response.has_feedback,
           feedback_students_count: response.total_count,
         });
+        
+        // Show success message
+        if (response.has_feedback) {
+          console.log('Like trimis! Profesorul va primi o notificare.');
+        }
       },
       error: (err) => {
         console.error('Error toggling student feedback:', err);
