@@ -9,6 +9,7 @@ import {
 import { MaterialService } from '../../services/material.service';
 import { Material } from '../../models/material.model';
 import { AuthService } from '../../services/auth.service';
+import { QuizService } from '../../services/quiz.service';
 import { MaterialSuggestionsComponent } from './material-suggestions.component';
 
 @Component({
@@ -38,6 +39,11 @@ import { MaterialSuggestionsComponent } from './material-suggestions.component';
           </button>
         </div>
         }
+
+        <!-- Generate AI Quiz Button -->
+        <button class="btn btn-ai" (click)="generateAIQuiz()" [disabled]="isGeneratingQuiz()">
+          {{ isGeneratingQuiz() ? '⏳ Se generează...' : '🤖 Generează Test cu AI' }}
+        </button>
       </div>
 
       <div class="material-content">
@@ -682,6 +688,33 @@ import { MaterialSuggestionsComponent } from './material-suggestions.component';
         background: #c53030;
       }
 
+      .btn-ai {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 0.75rem 1.5rem;
+        border: none;
+        border-radius: 6px;
+        font-weight: 600;
+        font-size: 14px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-left: auto;
+      }
+
+      .btn-ai:hover:not(:disabled) {
+        background: linear-gradient(135deg, #5568d4 0%, #653a91 100%);
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+      }
+
+      .btn-ai:disabled {
+        opacity: 0.7;
+        cursor: not-allowed;
+      }
+
       .btn-primary {
         background: #5548d9;
         color: white;
@@ -778,13 +811,15 @@ export class MaterialDetailComponent implements OnInit {
   selectedPdf = signal<string | null>(null);
   currentUser = signal<any>(null);
   showSuggestionsModal = signal(false);
+  isGeneratingQuiz = signal(false);
 
   constructor(
     private route: ActivatedRoute,
     private router: Router,
     private materialService: MaterialService,
     private authService: AuthService,
-    private sanitizer: DomSanitizer
+    private sanitizer: DomSanitizer,
+    private quizService: QuizService
   ) {}
 
   ngOnInit() {
@@ -952,5 +987,24 @@ export class MaterialDetailComponent implements OnInit {
 
   goBack() {
     this.router.navigate(['/materials']);
+  }
+
+  generateAIQuiz() {
+    const mat = this.material();
+    if (!mat) return;
+
+    this.isGeneratingQuiz.set(true);
+    this.quizService.generateQuizFromMaterial(mat.id).subscribe({
+      next: (quiz) => {
+        this.isGeneratingQuiz.set(false);
+        alert('Test generat cu succes! Poți să-l iei pentru a te antren.');
+        this.router.navigate(['/quizzes', quiz.id]);
+      },
+      error: (err) => {
+        this.isGeneratingQuiz.set(false);
+        console.error('Error generating AI quiz:', err);
+        alert('Eroare la generarea testului cu AI. Încearcă din nou.');
+      },
+    });
   }
 }

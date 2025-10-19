@@ -91,4 +91,11 @@ export class QuizService {
       }
     );
   }
+
+  generateQuizFromMaterial(materialId: number): Observable<Quiz> {
+    return this.apiService.post<Quiz>(
+      `/quizzes/generate-from-material/${materialId}`,
+      {}
+    );
+  }
 }

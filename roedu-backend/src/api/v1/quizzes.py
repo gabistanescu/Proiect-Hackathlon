@@ -620,6 +620,89 @@ def generate_ai_quiz(
             detail=f"Failed to generate quiz: {str(e)}"
         )
 
+@router.post("/generate-from-material/{material_id}", response_model=QuizResponse, status_code=status.HTTP_201_CREATED)
+def generate_quiz_from_material(
+    material_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Generate a quiz from material content using AI
+    Creates 3 questions: single_choice, multiple_choice, free_text
+    Students can use this to practice based on material
+    """
+    # Get material
+    from src.models.material import Material
+    material = db.query(Material).filter(Material.id == material_id).first()
+    if not material:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Material not found"
+        )
+    
+    # Check if user has access to material (professor who created it, or any user if public)
+    if material.visibility == "private" and material.professor_id != current_user.id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You don't have access to this material"
+        )
+    
+    try:
+        from src.services.quiz_generation_service import get_quiz_generation_service
+        quiz_gen = get_quiz_generation_service()
+        
+        # Generate quiz data from material content
+        quiz_data = quiz_gen.generate_quiz_from_material(
+            material_title=material.title,
+            material_content=material.content or material.description or "No content",
+            subject=material.subject or "General Knowledge",
+            grade_level=material.grade_level or 10
+        )
+        
+        # Create quiz in database
+        new_quiz = Quiz(
+            title=quiz_data.get("title", f"Quiz - {material.title}"),
+            description=quiz_data.get("description", f"Practice quiz from material: {material.title}"),
+            subject=quiz_data.get("subject", material.subject),
+            grade_level=quiz_data.get("grade_level", material.grade_level),
+            professor_id=current_user.id if current_user.role.value == "professor" else material.professor_id,
+            is_ai_generated=True,
+            time_limit=30  # 30 minutes default
+        )
+        
+        db.add(new_quiz)
+        db.flush()  # Get quiz ID
+        
+        # Add questions
+        for idx, question_data in enumerate(quiz_data.get("questions", [])):
+            options = question_data.get("options")
+            correct_answers = question_data.get("correct_answers", [])
+            
+            question = Question(
+                quiz_id=new_quiz.id,
+                question_text=question_data.get("question_text"),
+                question_type=question_data.get("question_type"),
+                options=json.dumps(options) if options else None,
+                correct_answers=json.dumps(correct_answers),
+                evaluation_criteria=question_data.get("evaluation_criteria"),
+                points=question_data.get("points", 1.0),
+                order_index=idx
+            )
+            db.add(question)
+        
+        db.commit()
+        db.refresh(new_quiz)
+        
+        return new_quiz
+        
+    except Exception as e:
+        db.rollback()
+        logger.error(f"Failed to generate quiz from material: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to generate quiz: {str(e)}"
+        )
+
 # NEW ENDPOINTS FOR TIMER PERSISTENCE AND AUTO-SUBMISSION
 
 @router.post("/start/{quiz_id}", response_model=QuizAttemptResponse, status_code=status.HTTP_201_CREATED)
