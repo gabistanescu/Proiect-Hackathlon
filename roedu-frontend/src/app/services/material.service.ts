@@ -36,6 +36,12 @@ export class MaterialService {
     return this.apiService.get<Material>(`/materials/${id}`);
   }
 
+  getMaterialsFeed(page: number = 1, pageSize: number = 10): Observable<any> {
+    return this.apiService.get<any>(
+      `/materials/feed/posts?page=${page}&page_size=${pageSize}`
+    );
+  }
+
   createMaterial(material: MaterialCreate): Observable<Material> {
     return this.apiService.post<Material>('/materials', material);
   }

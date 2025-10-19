@@ -138,7 +138,7 @@ def list_materials(
     List materials with filtering and pagination
     Visibility rules:
     - Students: only PUBLIC materials
-    - Professors: PUBLIC + PROFESSORS_ONLY + own PRIVATE materials
+    - Professors: ONLY their own materials (all visibility levels)
     """
     from src.models.material import VisibilityType
     from src.models.material_suggestions import MaterialFeedbackProfessor, MaterialFeedbackStudent
@@ -151,12 +151,8 @@ def list_materials(
         # Students see only PUBLIC materials
         query = query.filter(Material.visibility == VisibilityType.PUBLIC)
     elif current_user.role == UserRole.PROFESSOR:
-        # Professors see PUBLIC, PROFESSORS_ONLY, and their own PRIVATE materials
-        query = query.filter(
-            (Material.visibility == VisibilityType.PUBLIC) |
-            (Material.visibility == VisibilityType.PROFESSORS_ONLY) |
-            ((Material.visibility == VisibilityType.PRIVATE) & (Material.professor_id == current_user.id))
-        )
+        # Professors see ONLY their own materials
+        query = query.filter(Material.professor_id == current_user.id)
     
     # Apply other filters
     if profile_type:
@@ -212,6 +208,97 @@ def list_materials(
                 material.user_has_feedback = False
             
             # Count suggestions (only for professors)
+            material.suggestions_count = 0
+            if current_user.role == UserRole.PROFESSOR:
+                from src.models.material_suggestions import MaterialSuggestion
+                material.suggestions_count = db.query(func.count(MaterialSuggestion.id)).filter(
+                    MaterialSuggestion.material_id == material.id
+                ).scalar() or 0
+            
+            # Convert to Pydantic model for serialization
+            materials_list.append(MaterialResponse.model_validate(material))
+        
+        # Replace items with Pydantic models
+        result['items'] = materials_list
+    
+    return result
+
+@router.get("/feed/posts", response_model=dict)
+def get_materials_feed(
+    page: int = Query(1, ge=1),
+    page_size: int = Query(10, ge=1, le=100),
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Get materials feed based on visibility rules:
+    - Students: only PUBLIC materials
+    - Professors: PUBLIC + PROFESSORS_ONLY materials (from all professors)
+    - Shows materials as a social feed, sorted by published_at (newest first)
+    """
+    from src.models.material import VisibilityType
+    from src.models.material_suggestions import MaterialFeedbackProfessor, MaterialFeedbackStudent
+    from sqlalchemy import func
+    
+    query = db.query(Material)
+    
+    # Apply visibility filter based on user role
+    if current_user.role == UserRole.STUDENT:
+        # Students see only PUBLIC materials
+        query = query.filter(Material.visibility == VisibilityType.PUBLIC)
+    elif current_user.role == UserRole.PROFESSOR:
+        # Professors see PUBLIC + PROFESSORS_ONLY materials from ALL professors
+        query = query.filter(
+            (Material.visibility == VisibilityType.PUBLIC) |
+            (Material.visibility == VisibilityType.PROFESSORS_ONLY)
+        )
+    
+    # Order by published_at (newest first) - like a social feed
+    query = query.order_by(Material.published_at.desc())
+    
+    # Get paginated results
+    result = paginate_results(query, page, page_size)
+    
+    # Convert SQLAlchemy objects to Pydantic models for proper serialization
+    if 'items' in result:
+        materials_list = []
+        for material in result['items']:
+            # Parse JSON/string fields to lists
+            material.tags = parse_tags(material.tags) if material.tags else []
+            material.file_paths = parse_json_field(material.file_paths) if material.file_paths else []
+            
+            # Count feedback based on visibility
+            if current_user.role == UserRole.PROFESSOR or material.visibility == VisibilityType.PUBLIC:
+                material.feedback_professors_count = db.query(func.count(MaterialFeedbackProfessor.id)).filter(
+                    MaterialFeedbackProfessor.material_id == material.id
+                ).scalar() or 0
+            else:
+                material.feedback_professors_count = 0
+            
+            if material.visibility == VisibilityType.PUBLIC:
+                material.feedback_students_count = db.query(func.count(MaterialFeedbackStudent.id)).filter(
+                    MaterialFeedbackStudent.material_id == material.id
+                ).scalar() or 0
+            else:
+                material.feedback_students_count = 0
+            
+            # Check if current user has given feedback
+            if current_user.role == UserRole.PROFESSOR:
+                user_feedback = db.query(MaterialFeedbackProfessor).filter(
+                    MaterialFeedbackProfessor.material_id == material.id,
+                    MaterialFeedbackProfessor.professor_id == current_user.id
+                ).first()
+                material.user_has_feedback = user_feedback is not None
+            elif current_user.role == UserRole.STUDENT:
+                user_feedback = db.query(MaterialFeedbackStudent).filter(
+                    MaterialFeedbackStudent.material_id == material.id,
+                    MaterialFeedbackStudent.student_id == current_user.id
+                ).first()
+                material.user_has_feedback = user_feedback is not None
+            else:
+                material.user_has_feedback = False
+            
+            # Count suggestions (only for professors and visible materials)
             material.suggestions_count = 0
             if current_user.role == UserRole.PROFESSOR:
                 from src.models.material_suggestions import MaterialSuggestion

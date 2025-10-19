@@ -16,17 +16,23 @@ export const routes: Routes = [
   {
     path: 'about',
     loadComponent: () =>
-      import('./components/about/about.component').then((m) => m.AboutComponent),
+      import('./components/about/about.component').then(
+        (m) => m.AboutComponent
+      ),
   },
   {
     path: 'contact',
     loadComponent: () =>
-      import('./components/contact/contact.component').then((m) => m.ContactComponent),
+      import('./components/contact/contact.component').then(
+        (m) => m.ContactComponent
+      ),
   },
   {
     path: 'how-to-access',
     loadComponent: () =>
-      import('./components/access/access.component').then((m) => m.AccessComponent),
+      import('./components/access/access.component').then(
+        (m) => m.AccessComponent
+      ),
   },
   {
     path: 'login',
@@ -149,6 +155,10 @@ export const routes: Routes = [
           ),
       },
     ],
+    path: 'feed',
+    canActivate: [AuthGuard],
+    loadComponent: () =>
+      import('./pages/feed/feed.component').then((m) => m.FeedComponent),
   },
   {
     path: '**',
