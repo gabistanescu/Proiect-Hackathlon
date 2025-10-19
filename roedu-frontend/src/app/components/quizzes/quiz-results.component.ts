@@ -48,7 +48,7 @@ interface QuizResult {
         <div *ngIf="userRole === 'professor'" class="student-info-header">
           <div class="student-badge">
             <span class="badge-label">Student:</span>
-            <span class="badge-value">{{ result.attempt.student_id }}</span>
+            <span class="badge-value">{{ result.attempt.student_email || 'N/A' }}</span>
           </div>
           <div class="test-info">
             <span class="info-item">Data: {{ result.attempt.started_at | date: 'dd MMM yyyy, HH:mm' }}</span>
@@ -1192,10 +1192,22 @@ export class QuizResultsComponent implements OnInit {
   }
 
   getTestDuration(): string {
-    if (!this.result?.attempt?.started_at || !this.result?.attempt?.ended_at) {
+    // Use duration_seconds from backend if available (preferred for accuracy)
+    if (this.result?.attempt?.duration_seconds !== undefined && this.result?.attempt?.duration_seconds !== null) {
+      const totalSeconds = this.result.attempt.duration_seconds;
+      const minutes = Math.floor(totalSeconds / 60);
+      const seconds = totalSeconds % 60;
+      return `${minutes} min ${seconds} sec`;
+    }
+    
+    // Fallback: calculate from started_at and completed_at
+    if (!this.result?.attempt?.started_at || !this.result?.attempt?.completed_at) {
       return 'N/A';
     }
-    const durationMs = this.result.attempt.ended_at - this.result.attempt.started_at;
+    
+    const startDate = new Date(this.result.attempt.started_at);
+    const endDate = new Date(this.result.attempt.completed_at);
+    const durationMs = endDate.getTime() - startDate.getTime();
     const durationMin = Math.floor(durationMs / (1000 * 60));
     const durationSec = Math.floor((durationMs % (1000 * 60)) / 1000);
     return `${durationMin} min ${durationSec} sec`;

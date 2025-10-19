@@ -477,11 +477,35 @@ def get_quiz_result(
             detail="Not authorized to view this attempt"
         )
     
+    # Enrich attempt with student_email and duration_seconds
+    from src.models.student import Student
+    student = db.query(Student).filter(Student.id == attempt.student_id).first()
+    attempt_dict = {
+        'id': attempt.id,
+        'quiz_id': attempt.quiz_id,
+        'student_id': attempt.student_id,
+        'score': attempt.score,
+        'max_score': attempt.max_score,
+        'started_at': attempt.started_at,
+        'completed_at': attempt.completed_at,
+        'time_remaining': attempt.time_remaining,
+        'is_expired': attempt.is_expired,
+    }
+    
+    # Add student email
+    if student and student.user:
+        attempt_dict['student_email'] = student.user.email
+    
+    # Calculate duration if both timestamps exist
+    if attempt.started_at and attempt.completed_at:
+        duration = (attempt.completed_at - attempt.started_at).total_seconds()
+        attempt_dict['duration_seconds'] = int(duration)
+    
     # Build result
     # Handle case where attempt hasn't been answered yet (e.g., just started)
     if not attempt.answers or attempt.completed_at is None:
         return {
-            "attempt": attempt,
+            "attempt": attempt_dict,
             "correct_answers": {},
             "student_answers": {},
             "question_scores": {}
@@ -546,7 +570,7 @@ def get_quiz_result(
                 question_scores[question.id] = 0.0
     
     return {
-        "attempt": attempt,
+        "attempt": attempt_dict,
         "correct_answers": correct_answers,
         "student_answers": {int(k) if k.isdigit() else k: v for k, v in student_answers.items()},
         "question_scores": question_scores,
