@@ -95,11 +95,9 @@ class AIEvaluationService:
         max_score: float,
         question_type: str
     ) -> str:
-        """Build evaluation prompt for AI"""
+        """Build comprehensive evaluation prompt for AI with detailed feedback structure"""
         
-        prompt = f"""You are an expert educational evaluator. 
-
-Evaluate the following student's answer to a quiz question.
+        prompt = f"""You are an expert educational evaluator specialized in assessing student answers.
 
 QUESTION:
 {question_text}
@@ -107,27 +105,86 @@ QUESTION:
 STUDENT'S ANSWER:
 {student_answer}
 
-EVALUATION CRITERIA / EXPECTED POINTS:
+EVALUATION CRITERIA / KEY POINTS:
 {correct_criteria}
 
-Max Score: {max_score} points
+MAXIMUM SCORE: {int(max_score)} points
 
-Provide your evaluation in the following JSON format:
+EVALUATION GUIDELINES:
+1. **Correctness**: Is the answer factually correct?
+2. **Completeness**: Does the answer address all aspects of the question?
+3. **Clarity**: Is the explanation clear and well-structured?
+4. **Understanding**: Does the answer demonstrate true understanding, not just memorization?
+5. **Reasoning**: Is the logic sound and well-explained?
+
+SCORING RUBRIC:
+- Full Score ({int(max_score)} pts): Answer is comprehensive, correct, and shows deep understanding
+- 80% ({int(max_score * 0.8)} pts): Answer is mostly correct with minor gaps
+- 60% ({int(max_score * 0.6)} pts): Answer covers main points but lacks completeness or clarity
+- 40% ({int(max_score * 0.4)} pts): Answer has significant gaps but shows some understanding
+- 20% ({int(max_score * 0.2)} pts): Minimal understanding, mostly incorrect
+- 0% (0 pts): No answer or completely incorrect
+
+Provide your evaluation in the following JSON format (MUST BE VALID JSON):
 {{
-    "score": <number between 0 and {max_score}>,
-    "feedback": "<detailed feedback for the student>",
-    "reasoning": "<brief explanation of the score>",
-    "strengths": ["<positive aspect 1>", "<positive aspect 2>"],
-    "improvements": ["<area for improvement 1>", "<area for improvement 2>"]
+    "score": <number between 0 and {int(max_score)}>,
+    "feedback": "<Comprehensive feedback that addresses all aspects of the answer>",
+    "reasoning": "<Brief explanation of why this score was assigned>",
+    "score_breakdown": {{
+        "correctness": <0-{int(max_score)}>,
+        "completeness": <0-{int(max_score)}>,
+        "clarity": <0-{int(max_score)}>
+    }},
+    "strengths": [
+        "<Specific strength 1 - what the student did well>",
+        "<Specific strength 2>",
+        "<Specific strength 3 if applicable>"
+    ],
+    "improvements": [
+        "<Specific area for improvement 1>",
+        "<Specific area for improvement 2>",
+        "<Specific area for improvement 3 if applicable>"
+    ],
+    "suggestions": [
+        "<Actionable suggestion 1 for better understanding>",
+        "<Actionable suggestion 2>",
+        "<Actionable suggestion 3 if applicable>"
+    ]
 }}
 
-Be fair but rigorous. Consider:
-1. Correctness of the answer
-2. Completeness of explanation
-3. Understanding of the concept
-4. Quality of reasoning
+IMPORTANT REQUIREMENTS:
+- Return ONLY valid JSON, no markdown, no explanatory text
+- Score must be an integer or float between 0 and {int(max_score)}
+- Feedback should be detailed and professional
+- Strengths, improvements, and suggestions should be specific and actionable
+- All arrays must contain at least 2-3 items
 
-Return ONLY valid JSON, no additional text."""
+Example response format (replace with actual evaluation):
+{{
+    "score": {int(max_score * 0.75)},
+    "feedback": "Your answer demonstrates good understanding of the core concepts and provides clear examples. You correctly identified the main points and explained them well. However, you could have included more specific supporting details to make the answer more comprehensive.",
+    "reasoning": "Full marks were not awarded because while the answer is mostly correct and clear, it lacks some of the depth and supporting details expected for a complete response.",
+    "score_breakdown": {{
+        "correctness": {int(max_score * 0.9)},
+        "completeness": {int(max_score * 0.7)},
+        "clarity": {int(max_score * 0.8)}
+    }},
+    "strengths": [
+        "Clear and logical presentation of ideas",
+        "Correct understanding of fundamental concepts",
+        "Good use of examples to support explanations"
+    ],
+    "improvements": [
+        "Could include more supporting evidence or references",
+        "Some concepts could be explained in greater depth",
+        "Could benefit from more detailed analysis"
+    ],
+    "suggestions": [
+        "Try to provide specific examples for each main point",
+        "Consider exploring the topic from multiple perspectives",
+        "Review related concepts to deepen your understanding"
+    ]
+}}"""
         
         return prompt
     
@@ -137,7 +194,7 @@ Return ONLY valid JSON, no additional text."""
         max_score: float,
         question_type: str
     ) -> Tuple[float, str, Dict[str, Any]]:
-        """Parse AI response and extract score and feedback"""
+        """Parse AI response and extract score, feedback, and detailed breakdown"""
         
         try:
             # Try to extract JSON from response
@@ -157,13 +214,22 @@ Return ONLY valid JSON, no additional text."""
             
             feedback = data.get("feedback", "No feedback available")
             
+            # Extract detailed feedback components
+            score_breakdown = data.get("score_breakdown", {})
+            strengths = data.get("strengths", [])
+            improvements = data.get("improvements", [])
+            suggestions = data.get("suggestions", [])
+            reasoning = data.get("reasoning", "")
+            
             metadata = {
-                "version": "v1-ai-evaluation",
+                "version": "v2-detailed-feedback",
                 "question_type": question_type,
                 "max_score": max_score,
-                "reasoning": data.get("reasoning", ""),
-                "strengths": data.get("strengths", []),
-                "improvements": data.get("improvements", []),
+                "reasoning": reasoning,
+                "score_breakdown": score_breakdown,
+                "strengths": strengths,
+                "improvements": improvements,
+                "suggestions": suggestions,
                 "ai_generated": True
             }
             

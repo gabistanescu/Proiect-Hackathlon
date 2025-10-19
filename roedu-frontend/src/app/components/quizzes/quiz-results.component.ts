@@ -8,6 +8,16 @@ interface QuizResult {
   correct_answers: { [key: number]: string[] };
   student_answers: { [key: number]: string[] | string };
   question_scores: { [key: number]: number };
+  ai_evaluations?: { [key: number]: {
+    ai_score: number;
+    ai_feedback: string;
+    ai_reasoning: string;
+    ai_model_version: string;
+    ai_score_breakdown?: { [key: string]: number };
+    ai_strengths?: string[];
+    ai_improvements?: string[];
+    ai_suggestions?: string[];
+  }};
 }
 
 @Component({
@@ -85,6 +95,54 @@ interface QuizResult {
                        [ngClass]="isAnswerCorrect(question.id, answer) ? 'correct' : 'incorrect'">
                     {{ isAnswerCorrect(question.id, answer) ? '✓' : '✗' }} {{ answer }}
                   </div>
+                </div>
+              </div>
+
+              <!-- AI Evaluation Feedback for Free Text -->
+              <div *ngIf="question.question_type === 'free_text' && result.ai_evaluations?.[question.id]" class="ai-evaluation">
+                <div class="ai-header">
+                  <h4>🤖 Evaluare AI</h4>
+                  <span class="ai-version">{{ result.ai_evaluations[question.id].ai_model_version }}</span>
+                </div>
+                
+                <!-- Feedback -->
+                <div class="ai-feedback">
+                  <p>{{ result.ai_evaluations[question.id].ai_feedback }}</p>
+                </div>
+
+                <!-- Score Breakdown -->
+                <div *ngIf="result.ai_evaluations[question.id].ai_score_breakdown" class="score-breakdown">
+                  <h5>Detalii punctaj:</h5>
+                  <div class="breakdown-items">
+                    <div class="breakdown-item" *ngFor="let item of getScoreBreakdownItems(result.ai_evaluations[question.id].ai_score_breakdown)">
+                      <span class="label">{{ item.label }}:</span>
+                      <span class="value">{{ item.value }} puncte</span>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Strengths -->
+                <div *ngIf="result.ai_evaluations[question.id].ai_strengths?.length" class="strengths">
+                  <h5>✓ Puncte forte:</h5>
+                  <ul>
+                    <li *ngFor="let strength of result.ai_evaluations[question.id].ai_strengths">{{ strength }}</li>
+                  </ul>
+                </div>
+
+                <!-- Areas for Improvement -->
+                <div *ngIf="result.ai_evaluations[question.id].ai_improvements?.length" class="improvements">
+                  <h5>⚠ Arii de îmbunătățire:</h5>
+                  <ul>
+                    <li *ngFor="let improvement of result.ai_evaluations[question.id].ai_improvements">{{ improvement }}</li>
+                  </ul>
+                </div>
+
+                <!-- Suggestions -->
+                <div *ngIf="result.ai_evaluations[question.id].ai_suggestions?.length" class="suggestions">
+                  <h5>💡 Sugestii pentru învățare:</h5>
+                  <ul>
+                    <li *ngFor="let suggestion of result.ai_evaluations[question.id].ai_suggestions">{{ suggestion }}</li>
+                  </ul>
                 </div>
               </div>
             </div>
@@ -393,6 +451,172 @@ interface QuizResult {
       margin: 0;
     }
 
+    .ai-evaluation {
+      grid-column: 1 / -1;
+      padding: 20px;
+      background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+      border-radius: 8px;
+      border-left: 4px solid #667eea;
+      margin-top: 15px;
+    }
+
+    .ai-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 15px;
+      padding-bottom: 10px;
+      border-bottom: 2px solid #667eea;
+    }
+
+    .ai-header h4 {
+      margin: 0;
+      font-size: 16px;
+      color: #667eea;
+      font-weight: 600;
+    }
+
+    .ai-version {
+      background: #667eea;
+      color: white;
+      padding: 4px 10px;
+      border-radius: 12px;
+      font-size: 11px;
+      font-weight: 600;
+    }
+
+    .ai-feedback {
+      background: white;
+      padding: 15px;
+      border-radius: 6px;
+      margin-bottom: 15px;
+      line-height: 1.6;
+      color: #333;
+      font-size: 14px;
+    }
+
+    .score-breakdown {
+      background: white;
+      padding: 15px;
+      border-radius: 6px;
+      margin-bottom: 15px;
+    }
+
+    .score-breakdown h5 {
+      margin: 0 0 12px 0;
+      font-size: 13px;
+      color: #667eea;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .breakdown-items {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 10px;
+    }
+
+    .breakdown-item {
+      background: #f9f9f9;
+      padding: 10px 12px;
+      border-radius: 4px;
+      border-left: 3px solid #667eea;
+    }
+
+    .breakdown-item .label {
+      display: block;
+      font-size: 12px;
+      color: #999;
+      text-transform: capitalize;
+    }
+
+    .breakdown-item .value {
+      display: block;
+      font-size: 16px;
+      font-weight: 600;
+      color: #667eea;
+    }
+
+    .strengths,
+    .improvements,
+    .suggestions {
+      background: white;
+      padding: 15px;
+      border-radius: 6px;
+      margin-bottom: 15px;
+    }
+
+    .strengths h5 {
+      margin: 0 0 12px 0;
+      font-size: 13px;
+      color: #4caf50;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .improvements h5 {
+      margin: 0 0 12px 0;
+      font-size: 13px;
+      color: #ff9800;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .suggestions h5 {
+      margin: 0 0 12px 0;
+      font-size: 13px;
+      color: #2196f3;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .strengths ul,
+    .improvements ul,
+    .suggestions ul {
+      margin: 0;
+      padding-left: 20px;
+      list-style: none;
+    }
+
+    .strengths li,
+    .improvements li,
+    .suggestions li {
+      margin-bottom: 8px;
+      padding-left: 20px;
+      position: relative;
+      font-size: 13px;
+      line-height: 1.5;
+      color: #333;
+    }
+
+    .strengths li::before {
+      content: '✓';
+      position: absolute;
+      left: 0;
+      color: #4caf50;
+      font-weight: 600;
+    }
+
+    .improvements li::before {
+      content: '•';
+      position: absolute;
+      left: 0;
+      color: #ff9800;
+      font-weight: 600;
+    }
+
+    .suggestions li::before {
+      content: '→';
+      position: absolute;
+      left: 0;
+      color: #2196f3;
+      font-weight: 600;
+    }
+
     .action-buttons {
       display: flex;
       gap: 15px;
@@ -569,5 +793,10 @@ export class QuizResultsComponent implements OnInit {
   downloadResults(): void {
     // Placeholder for PDF download functionality
     alert('Funcționalitate în dezvoltare');
+  }
+
+  getScoreBreakdownItems(breakdown: { [key: string]: number } | undefined): { label: string, value: number }[] {
+    if (!breakdown) return [];
+    return Object.entries(breakdown).map(([label, value]) => ({ label, value }));
   }
 }

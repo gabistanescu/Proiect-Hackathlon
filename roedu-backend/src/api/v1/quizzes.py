@@ -462,6 +462,25 @@ def get_quiz_result(
     student_answers = json.loads(attempt.answers)
     correct_answers = {}
     question_scores = {}
+    ai_evaluations = {}  # Store AI evaluations by question_id
+    
+    # Get AI evaluation reports for this attempt
+    from src.models.ai_evaluation_report import AIEvaluationReport
+    ai_reports = db.query(AIEvaluationReport).filter(
+        AIEvaluationReport.quiz_attempt_id == attempt.id
+    ).all()
+    
+    for report in ai_reports:
+        ai_evaluations[report.question_id] = {
+            "ai_score": report.ai_score,
+            "ai_feedback": report.ai_feedback,
+            "ai_reasoning": report.ai_reasoning,
+            "ai_model_version": report.ai_model_version,
+            "ai_score_breakdown": json.loads(report.ai_score_breakdown) if report.ai_score_breakdown else {},
+            "ai_strengths": json.loads(report.ai_strengths) if report.ai_strengths else [],
+            "ai_improvements": json.loads(report.ai_improvements) if report.ai_improvements else [],
+            "ai_suggestions": json.loads(report.ai_suggestions) if report.ai_suggestions else []
+        }
     
     for question in quiz.questions:
         correct_answers[question.id] = json.loads(question.correct_answers)
@@ -491,7 +510,8 @@ def get_quiz_result(
         "attempt": attempt,
         "correct_answers": correct_answers,
         "student_answers": {int(k) if k.isdigit() else k: v for k, v in student_answers.items()},
-        "question_scores": question_scores
+        "question_scores": question_scores,
+        "ai_evaluations": ai_evaluations  # Include detailed AI feedback
     }
 
 @router.post("/generate-ai", response_model=QuizResponse, status_code=status.HTTP_201_CREATED)
@@ -708,6 +728,7 @@ def auto_submit_quiz_attempt(
                 elif question.question_type == QuestionType.FREE_TEXT:
                     # For free text, use AI evaluation if available
                     from src.services.ai_evaluation_service import get_ai_evaluation_service
+                    from src.models.ai_evaluation_report import AIEvaluationReport
                     ai_service = get_ai_evaluation_service()
                     
                     if student_answers:
@@ -722,8 +743,27 @@ def auto_submit_quiz_attempt(
                                 "free_text"
                             )
                             total_score += ai_score
+                            
+                            # Save detailed AI evaluation report
+                            ai_report = AIEvaluationReport(
+                                quiz_attempt_id=attempt.id,
+                                question_id=question.id,
+                                student_id=attempt.student_id,
+                                ai_score=ai_score,
+                                ai_feedback=ai_feedback,
+                                ai_reasoning=metadata.get("reasoning", ""),
+                                ai_model_version=metadata.get("version", "gemini-pro"),
+                                ai_score_breakdown=json.dumps(metadata.get("score_breakdown", {})),
+                                ai_strengths=json.dumps(metadata.get("strengths", [])),
+                                ai_improvements=json.dumps(metadata.get("improvements", [])),
+                                ai_suggestions=json.dumps(metadata.get("suggestions", [])),
+                                reason="Auto-evaluated by AI system",
+                                status="resolved"
+                            )
+                            db.add(ai_report)
+                            
                         except Exception as e:
-                            # logger.error(f"AI evaluation failed: {e}, skipping score") # Original code had this line commented out
+                            logger.error(f"AI evaluation failed: {e}, skipping score")
                             pass  # If AI fails, don't add points
             
             attempt.score = total_score

@@ -22,6 +22,10 @@ class AIEvaluationReport(Base):
     ai_feedback = Column(Text, nullable=True)  # AI feedback text
     ai_reasoning = Column(Text, nullable=True)  # Detailed AI reasoning
     ai_model_version = Column(String(100), nullable=True)  # e.g., "gemini-pro"
+    ai_score_breakdown = Column(Text, nullable=True)  # JSON: {correctness, completeness, clarity}
+    ai_strengths = Column(Text, nullable=True)  # JSON array: strengths list
+    ai_improvements = Column(Text, nullable=True)  # JSON array: improvements list
+    ai_suggestions = Column(Text, nullable=True)  # JSON array: suggestions for learning
     
     # Student Report (Dispute)
     reason = Column(Text, nullable=False)  # Why student disputes the evaluation
