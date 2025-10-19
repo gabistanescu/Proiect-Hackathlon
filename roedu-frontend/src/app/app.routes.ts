@@ -171,6 +171,22 @@ export const routes: Routes = [
       ),
   },
   {
+    path: 'settings',
+    canActivate: [AuthGuard],
+    loadComponent: () =>
+      import('./pages/settings/settings.component').then(
+        (m) => m.SettingsComponent
+      ),
+  },
+  {
+    path: 'saved-materials',
+    canActivate: [AuthGuard],
+    loadComponent: () =>
+      import('./pages/saved-materials/saved-materials.component').then(
+        (m) => m.SavedMaterialsComponent
+      ),
+  },
+  {
     path: '**',
     redirectTo: '',
   },

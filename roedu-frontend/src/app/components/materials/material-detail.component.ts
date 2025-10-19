@@ -41,6 +41,10 @@ import { MaterialSuggestionsComponent } from './material-suggestions.component';
             🗑️ Șterge
           </button>
         </div>
+        } @else {
+        <button class="btn btn-save">
+          💾 Salvează
+        </button>
         }
 
         <!-- Generate AI Quiz Button -->
@@ -325,7 +329,7 @@ import { MaterialSuggestionsComponent } from './material-suggestions.component';
                   <div class="comment-header">
                     <div class="comment-author">
                       <div class="author-avatar">
-                        {{ (comment.username?.charAt(0) || '?').toUpperCase() }}
+                        {{ (comment.username.charAt(0) || '?').toUpperCase() }}
                       </div>
                       <div class="author-info">
                         <span class="author-name">{{ comment.username }}</span>
@@ -440,6 +444,7 @@ import { MaterialSuggestionsComponent } from './material-suggestions.component';
         justify-content: space-between;
         align-items: center;
         margin-bottom: 2rem;
+        gap: 1rem;
       }
 
       .btn-back {
@@ -1296,6 +1301,27 @@ import { MaterialSuggestionsComponent } from './material-suggestions.component';
 
       .btn-delete:hover {
         background: #c53030;
+      }
+
+      .btn-save {
+        background: #10b981;
+        color: white;
+        padding: 0.75rem 1.5rem;
+        border: none;
+        border-radius: 6px;
+        font-weight: 600;
+        font-size: 14px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+      }
+
+      .btn-save:hover {
+        background: #059669;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
       }
 
       .btn-ai {

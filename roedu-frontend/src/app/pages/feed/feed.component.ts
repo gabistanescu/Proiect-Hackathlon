@@ -148,9 +148,16 @@ import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
               </button>
             </div>
 
-            <button class="btn-view" (click)="viewMaterial(material.id)">
-              Vezi detalii →
-            </button>
+            <div class="action-buttons">
+              @if (!isMyMaterial(material.professor_id)) {
+              <button class="btn-save">
+                💾 Salvează
+              </button>
+              }
+              <button class="btn-view" (click)="viewMaterial(material.id)">
+                Vezi detalii →
+              </button>
+            </div>
           </div>
         </div>
         }
@@ -502,6 +509,33 @@ import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
         font-size: 1.2rem;
       }
 
+      .action-buttons {
+        display: flex;
+        gap: 0.75rem;
+        align-items: center;
+      }
+
+      .btn-save {
+        padding: 0.5rem 1.25rem;
+        background: #10b981;
+        color: white;
+        border: none;
+        border-radius: 6px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.3s;
+        font-size: 0.9rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+      }
+
+      .btn-save:hover {
+        background: #059669;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+      }
+
       .btn-view {
         padding: 0.5rem 1.5rem;
         background: #5548d9;
@@ -657,6 +691,11 @@ export class FeedComponent implements OnInit {
 
   isProfessor(): boolean {
     return this.currentUser()?.role === 'professor';
+  }
+
+  isMyMaterial(professorId: number): boolean {
+    const currentUserId = this.currentUser()?.id;
+    return currentUserId === professorId;
   }
 
   getProfileLabel(profile: string): string {

@@ -273,6 +273,24 @@
       }
     }
 
+    .logout-dropdown-btn {
+      background: none;
+      border: none;
+      width: 100%;
+      text-align: left;
+      color: #ef4444;
+      font-weight: 500;
+      
+      &:hover {
+        background-color: #fee2e2;
+        color: #dc2626;
+      }
+
+      .dropdown-icon {
+        color: #ef4444;
+      }
+    }
+
     .logout-btn {
       background-color: rgba(255, 255, 255, 0.15);
       border: 1px solid rgba(255, 255, 255, 0.4);
