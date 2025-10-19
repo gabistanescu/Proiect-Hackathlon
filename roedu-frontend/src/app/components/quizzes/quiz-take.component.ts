@@ -250,7 +250,8 @@ import { Quiz, Question, QuestionType } from '../../models/quiz.model';
     .quiz-description {
       margin: 0;
       font-size: 14px;
-      opacity: 0.9;
+      color: white;
+      opacity: 1;
     }
 
     .timer-box {
@@ -265,12 +266,14 @@ import { Quiz, Question, QuestionType } from '../../models/quiz.model';
       font-weight: 700;
       font-family: 'Courier New', monospace;
       letter-spacing: 2px;
+      color: white;
     }
 
     .timer-label {
       margin: 8px 0 0 0;
       font-size: 12px;
-      opacity: 0.9;
+      color: white;
+      opacity: 1;
     }
 
     .quiz-main {
@@ -388,23 +391,40 @@ import { Quiz, Question, QuestionType } from '../../models/quiz.model';
       gap: 12px;
       cursor: pointer;
       flex: 1;
-      font-size: 14px;
+      font-size: 16px;
       margin: 0;
+      padding: 12px;
+      border: 2px solid #e0e0e0;
+      border-radius: 8px;
+      transition: all 0.2s;
+      background: #fafafa;
+    }
+
+    .radio-label:hover, .checkbox-label:hover {
+      border-color: #667eea;
+      background: #f5f7ff;
     }
 
     .radio-label input, .checkbox-label input {
-      width: 18px;
-      height: 18px;
-      cursor: pointer;
+      display: none;
     }
 
     .radio-custom, .checkbox-custom {
-      width: 20px;
-      height: 20px;
-      border: 2px solid #ddd;
-      border-radius: 4px;
+      width: 22px;
+      height: 22px;
+      border: 2px solid #bbb;
       display: inline-block;
       transition: all 0.2s;
+      flex-shrink: 0;
+      position: relative;
+    }
+
+    .radio-custom {
+      border-radius: 50%;
+    }
+
+    .checkbox-custom {
+      border-radius: 4px;
     }
 
     .radio-label input:checked ~ .radio-custom {
@@ -412,9 +432,56 @@ import { Quiz, Question, QuestionType } from '../../models/quiz.model';
       border-color: #667eea;
     }
 
+    .radio-label input:checked ~ .radio-custom::after {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 10px;
+      height: 10px;
+      background: white;
+      border-radius: 50%;
+    }
+
     .checkbox-label input:checked ~ .checkbox-custom {
       background: #4caf50;
       border-color: #4caf50;
+    }
+
+    .checkbox-label input:checked ~ .checkbox-custom::after {
+      content: '✓';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      color: white;
+      font-size: 14px;
+      font-weight: bold;
+    }
+
+    .radio-label input:checked {
+      & ~ .radio-custom {
+        background: #667eea;
+        border-color: #667eea;
+      }
+    }
+
+    .checkbox-label input:checked {
+      & ~ .checkbox-custom {
+        background: #4caf50;
+        border-color: #4caf50;
+      }
+    }
+
+    .radio-label:has(input:checked) {
+      border-color: #667eea;
+      background: #f5f7ff;
+    }
+
+    .checkbox-label:has(input:checked) {
+      border-color: #4caf50;
+      background: #f0fff4;
     }
 
     .free-text {
@@ -686,22 +753,50 @@ export class QuizTakeComponent implements OnInit, OnDestroy {
         this.quiz = quiz;
         this.initializeForm();
         
-        // Start attempt on backend to get server-synced timer
+        // Check if there's an existing active attempt first
         if (quiz.time_limit && quiz.time_limit > 0) {
-          this.quizService.startAttempt(quizId).subscribe({
-            next: (attempt) => {
-              this.attemptId = attempt.id;
-              // Get time remaining from server
-              this.timeLeft = attempt.time_remaining || ((this.quiz?.time_limit || 60) * 60);
-              this.startTime = new Date(attempt.started_at);
-              this.startTimer();
-              this.isLoading = false;
-            },
-            error: () => {
-              this.errorMessage = 'Nu s-a putut incepe testul';
-              this.isLoading = false;
-            }
-          });
+          // Try to get existing attempt from localStorage
+          const attemptKey = `quiz_attempt_${quizId}`;
+          const savedAttemptId = localStorage.getItem(attemptKey);
+          
+          if (savedAttemptId) {
+            // Resume existing attempt
+            this.quizService.getAttemptResult(parseInt(savedAttemptId)).subscribe({
+              next: (result) => {
+                if (result.attempt && !result.attempt.completed_at && !result.attempt.is_expired) {
+                  // Valid active attempt found - resume it
+                  this.attemptId = result.attempt.id;
+                  this.timeLeft = result.attempt.time_remaining || ((this.quiz?.time_limit || 60) * 60);
+                  this.startTime = new Date(result.attempt.started_at);
+                  
+                  // Restore answers if any
+                  if (result.attempt.answers) {
+                    try {
+                      const savedAnswers = JSON.parse(result.attempt.answers);
+                      this.restoreAnswers(savedAnswers);
+                    } catch (e) {
+                      console.error('Failed to parse saved answers:', e);
+                    }
+                  }
+                  
+                  this.startTimer();
+                  this.isLoading = false;
+                } else {
+                  // Attempt is completed or expired, start new one
+                  localStorage.removeItem(attemptKey);
+                  this.startNewAttempt(quizId);
+                }
+              },
+              error: () => {
+                // Attempt not found or error, start new one
+                localStorage.removeItem(attemptKey);
+                this.startNewAttempt(quizId);
+              }
+            });
+          } else {
+            // No saved attempt, start new one
+            this.startNewAttempt(quizId);
+          }
         } else {
           this.isLoading = false;
         }
@@ -709,6 +804,40 @@ export class QuizTakeComponent implements OnInit, OnDestroy {
       error: () => {
         this.errorMessage = 'Nu s-a putut încărca testul';
         this.isLoading = false;
+      }
+    });
+  }
+  
+  private startNewAttempt(quizId: number): void {
+    this.quizService.startAttempt(quizId).subscribe({
+      next: (attempt) => {
+        this.attemptId = attempt.id;
+        // Save attempt ID to localStorage
+        localStorage.setItem(`quiz_attempt_${quizId}`, attempt.id.toString());
+        
+        // Get time remaining from server
+        this.timeLeft = attempt.time_remaining || ((this.quiz?.time_limit || 60) * 60);
+        this.startTime = new Date(attempt.started_at);
+        this.startTimer();
+        this.isLoading = false;
+      },
+      error: () => {
+        this.errorMessage = 'Nu s-a putut incepe testul';
+        this.isLoading = false;
+      }
+    });
+  }
+  
+  private restoreAnswers(savedAnswers: any): void {
+    if (!this.quiz || !savedAnswers) return;
+    
+    this.quiz.questions.forEach((question, index) => {
+      const savedAnswer = savedAnswers[question.id];
+      if (savedAnswer !== undefined && savedAnswer !== null) {
+        const control = this.answersFormArray.at(index);
+        if (control) {
+          control.setValue(savedAnswer);
+        }
       }
     });
   }
@@ -732,14 +861,21 @@ export class QuizTakeComponent implements OnInit, OnDestroy {
       this.timeLeft--;
       syncCounter++;
       
-      // Sync with server every 10 seconds to handle multi-device scenarios
-      if (syncCounter % 10 === 0 && this.attemptId) {
+      // Sync with server every 5 seconds to keep time accurate
+      if (syncCounter % 5 === 0 && this.attemptId) {
         this.quizService.syncTimer(this.attemptId).subscribe({
           next: (attempt) => {
-            // Update time from server (more accurate)
-            this.timeLeft = Math.max(0, attempt.time_remaining || this.timeLeft);
+            // Always use server time as source of truth
+            const serverTime = attempt.time_remaining || 0;
             
-            if (attempt.is_expired) {
+            // Only update if there's a significant difference (>2 seconds)
+            // This prevents jitter while keeping sync accurate
+            if (Math.abs(this.timeLeft - serverTime) > 2) {
+              console.log(`Timer sync: ${this.timeLeft}s → ${serverTime}s`);
+              this.timeLeft = serverTime;
+            }
+            
+            if (attempt.is_expired || serverTime <= 0) {
               clearInterval(this.timerInterval);
               this.autoSubmitQuiz();
             }
@@ -847,6 +983,10 @@ export class QuizTakeComponent implements OnInit, OnDestroy {
     // Use server-side auto-submit which will evaluate answers with AI
     this.quizService.autoSubmitAttempt(this.attemptId).subscribe({
       next: (attempt) => {
+        // Clear localStorage for this quiz attempt
+        if (this.quiz) {
+          localStorage.removeItem(`quiz_attempt_${this.quiz.id}`);
+        }
         this.router.navigate(['/quizzes/results', attempt.id]);
       },
       error: () => {
@@ -888,6 +1028,11 @@ export class QuizTakeComponent implements OnInit, OnDestroy {
           // Step 2 → 3: Move to calculating final score
           this.submissionStep = 3;
           
+          // Clear localStorage for this quiz attempt
+          if (this.quiz) {
+            localStorage.removeItem(`quiz_attempt_${this.quiz.id}`);
+          }
+          
           // Final step before redirect
           setTimeout(() => {
             this.router.navigate(['/quizzes/results', attempt.id]);
@@ -905,6 +1050,11 @@ export class QuizTakeComponent implements OnInit, OnDestroy {
         next: (attempt) => {
           // Step 2 → 3: Move to calculating final score
           this.submissionStep = 3;
+          
+          // Clear localStorage for this quiz attempt
+          if (this.quiz) {
+            localStorage.removeItem(`quiz_attempt_${this.quiz.id}`);
+          }
           
           // Final step before redirect
           setTimeout(() => {
