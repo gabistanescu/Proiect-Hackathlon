@@ -57,27 +57,31 @@ def create_evaluation_report(
         AIEvaluationReport.quiz_attempt_id == attempt_id,
         AIEvaluationReport.question_id == question_id
     ).first()
-    if existing:
+    
+    # Get the AI evaluation for this question (there should be one)
+    ai_report = existing
+    if not ai_report:
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="This question already has a pending report"
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="No AI evaluation found for this question. Cannot report on non-evaluated question."
         )
     
-    # Create report - we'll populate AI details if stored somewhere
-    # For now, we create basic report
-    new_report = AIEvaluationReport(
-        quiz_attempt_id=attempt_id,
-        question_id=question_id,
-        student_id=current_user.id,
-        ai_score=0.0,  # Will be filled from attempt data
-        reason=report_data.reason,
-        status=EvaluationStatus.PENDING
-    )
+    # If the report already has a dispute reason, user wants to update it
+    # So update existing report instead of creating new one
+    if ai_report.reason and ai_report.reason != "Auto-evaluated by AI system":
+        # Already has a report from student
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="You already reported this evaluation. Contact your professor if you need to change it."
+        )
     
-    db.add(new_report)
+    # Update the existing report with student's dispute reason
+    ai_report.reason = report_data.reason
+    ai_report.status = EvaluationStatus.PENDING
+    
     db.commit()
-    db.refresh(new_report)
-    return new_report
+    db.refresh(ai_report)
+    return ai_report
 
 @router.get("/reports", response_model=List[AIEvaluationReportResponse])
 def get_pending_reports(
