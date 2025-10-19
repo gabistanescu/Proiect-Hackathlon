@@ -80,6 +80,7 @@ class QuizResponse(QuizBase):
     id: int
     professor_id: int
     is_ai_generated: bool
+    created_by_student_id: Optional[int] = None  # For AI-generated quizzes by students
     created_at: datetime
     updated_at: datetime
     questions: List[QuestionResponse] = []

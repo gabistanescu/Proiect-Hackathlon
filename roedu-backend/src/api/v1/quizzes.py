@@ -73,12 +73,22 @@ def list_quizzes(
         from src.models.student import Student
         student = db.query(Student).filter(Student.id == current_user.id).first()
         if student:
-            # Student sees: quizzes with no group OR quizzes where they're in the group
-            from sqlalchemy import or_
+            # Student sees:
+            # 1. Quizzes with no group OR quizzes where they're in the group (professor-created)
+            # 2. AI-generated quizzes created by themselves
+            from sqlalchemy import or_, and_
             query = query.filter(
                 or_(
-                    Quiz.group_id.is_(None),  # Public quizzes (no group)
-                    Quiz.group_id.in_([g.id for g in student.groups])  # Quizzes for their groups
+                    # Professor-created quizzes (no created_by_student_id) available to student
+                    and_(
+                        Quiz.created_by_student_id.is_(None),
+                        or_(
+                            Quiz.group_id.is_(None),  # Public quizzes (no group)
+                            Quiz.group_id.in_([g.id for g in student.groups])  # Quizzes for their groups
+                        )
+                    ),
+                    # AI-generated quizzes created by this student
+                    Quiz.created_by_student_id == current_user.id
                 )
             )
     elif current_user.role.value == "professor":
@@ -592,7 +602,16 @@ def get_quiz(
             )
     elif current_user.role.value == "student":
         # Check if student has access to this quiz
-        if quiz.group_id:
+        # Allow if: 1) created by this student OR 2) available to them via group
+        if quiz.created_by_student_id:
+            # AI-generated quiz - only creator can access
+            if quiz.created_by_student_id != current_user.id:
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail="You don't have access to this quiz"
+                )
+        elif quiz.group_id:
+            # Professor-created quiz with group - check group membership
             from src.models.student import Student
             student = db.query(Student).filter(Student.id == current_user.id).first()
             if not student or quiz.group_id not in [g.id for g in student.groups]:
@@ -945,12 +964,15 @@ def generate_quiz_from_material(
         )
         
         # Create quiz in database
+        # For students: mark quiz as created by them, professor_id is material owner
+        # For professors: professor_id is themselves, no created_by_student_id
         new_quiz = Quiz(
             title=quiz_data.get("title", f"Quiz - {material.title}"),
             description=quiz_data.get("description", f"Practice quiz from material: {material.title}"),
             subject=quiz_data.get("subject", material.subject),
             grade_level=quiz_data.get("grade_level", material.grade_level),
             professor_id=current_user.id if current_user.role.value == "professor" else material.professor_id,
+            created_by_student_id=current_user.id if current_user.role.value == "student" else None,
             is_ai_generated=True,
             time_limit=30  # 30 minutes default
         )
