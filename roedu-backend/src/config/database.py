@@ -30,11 +30,19 @@ def get_db():
 def init_db():
     """
     Initialize database tables
+    Drops existing tables and recreates them to ensure schema is current
     """
+    print("Dropping existing tables...")
+    Base.metadata.drop_all(bind=engine)
+    
+    print("Creating tables with current schema...")
     Base.metadata.create_all(bind=engine)
     
+    print("Seeding initial data...")
     session = SessionLocal()
     try:
         seed_initial_data(session)
     finally:
         session.close()
+    
+    print("✅ Database initialization complete!")
