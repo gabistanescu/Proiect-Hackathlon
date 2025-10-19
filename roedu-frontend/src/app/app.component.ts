@@ -19,6 +19,7 @@ export class AppComponent implements OnInit, OnDestroy {
   username: string | null = null;
   userPoints: number = 0;
   showDropdown = false;
+  showMobileMenu = false;
   private destroy$ = new Subject<void>();
 
   constructor(
@@ -63,6 +64,14 @@ export class AppComponent implements OnInit, OnDestroy {
 
   closeDropdown(): void {
     this.showDropdown = false;
+  }
+
+  toggleMobileMenu(): void {
+    this.showMobileMenu = !this.showMobileMenu;
+  }
+
+  closeMobileMenu(): void {
+    this.showMobileMenu = false;
   }
 
   logout(): void {

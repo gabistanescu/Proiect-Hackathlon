@@ -2,6 +2,7 @@
   <!-- Navigation Bar -->
   <nav class="navbar">
     <div class="navbar-container">
+      <!-- Logo -->
       <div class="navbar-brand">
         <a routerLink="/" class="logo">
           <span class="logo-icon">📚</span>
@@ -9,83 +10,57 @@
         </a>
       </div>
 
-      <div class="navbar-menu" [class.active]="true">
+      <!-- Desktop Navigation -->
+      <div class="navbar-desktop">
         <div class="navbar-items">
-          <a
-            routerLink="/"
-            routerLinkActive="active"
-            [routerLinkActiveOptions]="{ exact: true }"
-            class="nav-link"
-          >
-            Acasă
+          <a routerLink="/" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }" class="nav-link">
+            🏠 Acasă
           </a>
-
-          <a
-            routerLink="/about"
-            routerLinkActive="active"
-            [routerLinkActiveOptions]="{ exact: true }"
-            class="nav-link"
-          >
-            Despre Noi
+          <a routerLink="/about" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }" class="nav-link">
+            ℹ️ Despre
           </a>
-          <a
-            routerLink="/how-to-access"
-            routerLinkActive="active"
-            [routerLinkActiveOptions]="{ exact: true }"
-            class="nav-link"
-          >
-            Cum obții Accesul
+          <a routerLink="/how-to-access" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }" class="nav-link">
+            🔑 Acces
           </a>
-          <a
-            routerLink="/contact"
-            routerLinkActive="active"
-            [routerLinkActiveOptions]="{ exact: true }"
-            class="nav-link"
-          >
-            Contact
+          <a routerLink="/contact" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }" class="nav-link">
+            ✉️ Contact
           </a>
 
           <ng-container *ngIf="isLoggedIn">
+            <div class="nav-divider"></div>
             <a routerLink="/feed" routerLinkActive="active" class="nav-link">
-              📱 Flux de postări
+              📱 Flux
             </a>
-            <a
-              routerLink="/materials"
-              routerLinkActive="active"
-              class="nav-link"
-            >
+            <a routerLink="/materials" routerLinkActive="active" class="nav-link">
               📚 Materiale
             </a>
             <a routerLink="/quizzes" routerLinkActive="active" class="nav-link">
-              📝 Chestionare
+              📝 Teste
             </a>
+            <ng-container *ngIf="userRole === 'professor'">
+              <a routerLink="/groups" routerLinkActive="active" class="nav-link">
+                👥 Grupuri
+              </a>
+            </ng-container>
             <ng-container *ngIf="userRole === 'administrator'">
-              <a routerLink="/admin/dashboard"
-                 routerLinkActive="active"
-                 class="nav-link">
-                Admin
+              <a routerLink="/admin/dashboard" routerLinkActive="active" class="nav-link admin-link">
+                ⚙️ Admin
               </a>
             </ng-container>
           </ng-container>
-          
-          <a routerLink="/about"
-         routerLinkActive="active"
-         [routerLinkActiveOptions]="{ exact: true }"
-         class="nav-link">
-        Despre Noi
-      </a>
         </div>
 
+        <!-- Desktop Right Section -->
         <div class="navbar-right">
           <ng-container *ngIf="isLoggedIn">
             <div class="user-section">
               <div class="user-dropdown" (click)="toggleDropdown()">
                 <div class="avatar">
-                  <span class="avatar-text">{{ (username || 'U').charAt(0).toUpperCase() }}</span>
+                  <span>{{ (username || 'U').charAt(0).toUpperCase() }}</span>
                 </div>
-                <span class="username">{{ username }}</span>
-                <span class="dropdown-arrow">▼</span>
-                
+                <span class="username-text">{{ username }}</span>
+                <span class="dropdown-arrow" [class.open]="showDropdown">▼</span>
+
                 <div class="dropdown-menu" *ngIf="showDropdown" (click)="$event.stopPropagation()">
                   <a routerLink="/profile" class="dropdown-item" (click)="closeDropdown()">
                     <span class="dropdown-icon">👤</span>
@@ -95,26 +70,24 @@
                     <span class="dropdown-icon">⚙️</span>
                     <span>Setări</span>
                   </a>
-                  <a *ngIf="userRole === 'professor'" routerLink="/my-materials" class="dropdown-item" (click)="closeDropdown()">
-                    <span class="dropdown-icon">📚</span>
-                    <span>Materialele mele</span>
-                  </a>
-                  <a *ngIf="userRole === 'professor'" routerLink="/quizzes/create" class="dropdown-item" (click)="closeDropdown()">
-                    <span class="dropdown-icon">✏️</span>
-                    <span>Creeaza Test</span>
-                  </a>
-                  <a *ngIf="userRole === 'professor'" routerLink="/groups" class="dropdown-item" (click)="closeDropdown()">
-                    <span class="dropdown-icon">👥</span>
-                    <span>Gestionare Grupuri</span>
-                  </a>
+                  <ng-container *ngIf="userRole === 'professor'">
+                    <a routerLink="/my-materials" class="dropdown-item" (click)="closeDropdown()">
+                      <span class="dropdown-icon">📚</span>
+                      <span>Materialele mele</span>
+                    </a>
+                    <a routerLink="/quizzes/create" class="dropdown-item" (click)="closeDropdown()">
+                      <span class="dropdown-icon">✏️</span>
+                      <span>Creeaza Test</span>
+                    </a>
+                  </ng-container>
                   <a routerLink="/saved-materials" class="dropdown-item" (click)="closeDropdown()">
                     <span class="dropdown-icon">💾</span>
-                    <span>Materiale salvate</span>
+                    <span>Salvate</span>
                   </a>
                   <div class="dropdown-divider"></div>
                   <div class="dropdown-item points-display">
                     <span class="dropdown-icon">⭐</span>
-                    <span><strong>{{ userPoints }}</strong> puncte</span>
+                    <span><strong>{{ userPoints }}</strong> pct</span>
                   </div>
                 </div>
               </div>
@@ -124,6 +97,75 @@
           <ng-container *ngIf="!isLoggedIn">
             <a routerLink="/login" class="login-btn">Conectare</a>
             <a routerLink="/register" class="signup-btn">Înregistrare</a>
+          </ng-container>
+        </div>
+      </div>
+
+      <!-- Mobile Menu Button -->
+      <button class="mobile-menu-btn" (click)="toggleMobileMenu()" [class.active]="showMobileMenu">
+        <span class="hamburger"></span>
+        <span class="hamburger"></span>
+        <span class="hamburger"></span>
+      </button>
+
+      <!-- Mobile Menu -->
+      <div class="mobile-menu" *ngIf="showMobileMenu" [@slideIn]>
+        <div class="mobile-menu-items">
+          <a routerLink="/" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }" class="mobile-nav-link" (click)="closeMobileMenu()">
+            🏠 Acasă
+          </a>
+          <a routerLink="/about" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }" class="mobile-nav-link" (click)="closeMobileMenu()">
+            ℹ️ Despre
+          </a>
+          <a routerLink="/how-to-access" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }" class="mobile-nav-link" (click)="closeMobileMenu()">
+            🔑 Acces
+          </a>
+          <a routerLink="/contact" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }" class="mobile-nav-link" (click)="closeMobileMenu()">
+            ✉️ Contact
+          </a>
+
+          <ng-container *ngIf="isLoggedIn">
+            <div class="mobile-nav-divider"></div>
+            <a routerLink="/feed" routerLinkActive="active" class="mobile-nav-link" (click)="closeMobileMenu()">
+              📱 Flux de postări
+            </a>
+            <a routerLink="/materials" routerLinkActive="active" class="mobile-nav-link" (click)="closeMobileMenu()">
+              📚 Materiale
+            </a>
+            <a routerLink="/quizzes" routerLinkActive="active" class="mobile-nav-link" (click)="closeMobileMenu()">
+              📝 Teste
+            </a>
+            <ng-container *ngIf="userRole === 'professor'">
+              <a routerLink="/groups" routerLinkActive="active" class="mobile-nav-link" (click)="closeMobileMenu()">
+                👥 Grupuri
+              </a>
+              <a routerLink="/quizzes/create" class="mobile-nav-link" (click)="closeMobileMenu()">
+                ✏️ Creeaza Test
+              </a>
+            </ng-container>
+            <ng-container *ngIf="userRole === 'administrator'">
+              <a routerLink="/admin/dashboard" routerLinkActive="active" class="mobile-nav-link admin-link" (click)="closeMobileMenu()">
+                ⚙️ Admin
+              </a>
+            </ng-container>
+
+            <div class="mobile-nav-divider"></div>
+            <a routerLink="/profile" class="mobile-nav-link" (click)="closeMobileMenu()">
+              👤 Profil
+            </a>
+            <a routerLink="/settings" class="mobile-nav-link" (click)="closeMobileMenu()">
+              ⚙️ Setări
+            </a>
+            <button (click)="logout(); closeMobileMenu()" class="mobile-logout-btn">Deconectare</button>
+          </ng-container>
+          <ng-container *ngIf="!isLoggedIn">
+            <div class="mobile-nav-divider"></div>
+            <a routerLink="/login" class="mobile-nav-link" (click)="closeMobileMenu()">
+              Conectare
+            </a>
+            <a routerLink="/register" class="mobile-nav-link signup" (click)="closeMobileMenu()">
+              Înregistrare
+            </a>
           </ng-container>
         </div>
       </div>
