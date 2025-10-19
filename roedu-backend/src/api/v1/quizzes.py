@@ -97,311 +97,14 @@ def list_quizzes(
     quizzes = query.offset(skip).limit(limit).all()
     return quizzes
 
-@router.get("/{quiz_id}", response_model=QuizResponse)
-def get_quiz(
-    quiz_id: int,
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
-):
-    """
-    Get quiz details with all questions
-    - Professors can see only their own quizzes
-    - Students can see quizzes available to them
-    """
-    quiz = db.query(Quiz).filter(Quiz.id == quiz_id).first()
-    if not quiz:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Quiz not found"
-        )
-    
-    # Authorization check
-    if current_user.role.value == "professor":
-        if quiz.professor_id != current_user.id:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="You don't have permission to view this quiz"
-            )
-    elif current_user.role.value == "student":
-        # Check if student has access to this quiz
-        if quiz.group_id:
-            from src.models.student import Student
-            student = db.query(Student).filter(Student.id == current_user.id).first()
-            if not student or quiz.group_id not in [g.id for g in student.groups]:
-                raise HTTPException(
-                    status_code=status.HTTP_403_FORBIDDEN,
-                    detail="You don't have access to this quiz"
-                )
-    
-    return quiz
-
-@router.post("/", response_model=QuizResponse, status_code=status.HTTP_201_CREATED)
-def create_quiz(
-    quiz_data: QuizCreate,
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
-):
-    """
-    Create a new quiz (professors only)
-    """
-    if current_user.role.value != "professor":
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Only professors can create quizzes"
-        )
-    
-    # Verify professor exists
-    professor = db.query(Professor).filter(Professor.id == current_user.id).first()
-    if not professor:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Professor profile not found"
-        )
-    
-    # Create quiz
-    quiz_dict = quiz_data.model_dump(exclude={'questions'})
-    new_quiz = Quiz(
-        **quiz_dict,
-        professor_id=current_user.id
-    )
-    
-    db.add(new_quiz)
-    db.flush()  # Get quiz ID
-    
-    # Add questions
-    for idx, question_data in enumerate(quiz_data.questions):
-        question_dict = question_data.model_dump()
-        options = question_dict.pop('options', None)
-        correct_answers = question_dict.pop('correct_answers', [])
-        
-        question = Question(
-            **question_dict,
-            quiz_id=new_quiz.id,
-            order_index=idx,
-            options=json.dumps(options) if options else None,
-            correct_answers=json.dumps(correct_answers)
-        )
-        db.add(question)
-    
-    db.commit()
-    db.refresh(new_quiz)
-    return new_quiz
-
-@router.put("/{quiz_id}", response_model=QuizResponse)
-def update_quiz(
-    quiz_id: int,
-    quiz_data: QuizUpdate,
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
-):
-    """
-    Update a quiz (owner or admin only)
-    """
-    quiz = db.query(Quiz).filter(Quiz.id == quiz_id).first()
-    if not quiz:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Quiz not found"
-        )
-    
-    # Check permissions
-    if quiz.professor_id != current_user.id and current_user.role.value != "administrator":
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Not authorized to update this quiz"
-        )
-    
-    # Update fields
-    update_data = quiz_data.model_dump(exclude_unset=True)
-    for field, value in update_data.items():
-        setattr(quiz, field, value)
-    
-    db.commit()
-    db.refresh(quiz)
-    return quiz
-
-@router.delete("/{quiz_id}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_quiz(
-    quiz_id: int,
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
-):
-    """
-    Delete a quiz (owner or admin only)
-    """
-    quiz = db.query(Quiz).filter(Quiz.id == quiz_id).first()
-    if not quiz:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Quiz not found"
-        )
-    
-    # Check permissions
-    if quiz.professor_id != current_user.id and current_user.role.value != "administrator":
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Not authorized to delete this quiz"
-        )
-    
-    db.delete(quiz)
-    db.commit()
-    return None
-
 @router.post("/{quiz_id}/copy", response_model=QuizResponse, status_code=status.HTTP_201_CREATED)
 def copy_quiz(
     quiz_id: int,
-    copy_request: QuizCopyRequest,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
     """
-    Create a copy of an existing quiz (professors only)
-    """
-    if current_user.role.value != "professor":
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Only professors can copy quizzes"
-        )
-    
-    original_quiz = db.query(Quiz).filter(Quiz.id == quiz_id).first()
-    if not original_quiz:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Quiz not found"
-        )
-    
-    # Create new quiz
-    new_title = copy_request.new_title or f"Copy of {original_quiz.title}"
-    new_quiz = Quiz(
-        title=new_title,
-        description=original_quiz.description,
-        subject=original_quiz.subject,
-        grade_level=original_quiz.grade_level,
-        profile_type=original_quiz.profile_type,
-        time_limit=original_quiz.time_limit,
-        is_ai_generated=original_quiz.is_ai_generated,
-        professor_id=current_user.id,
-        group_id=copy_request.group_id
-    )
-    
-    db.add(new_quiz)
-    db.flush()
-    
-    # Copy questions
-    for original_question in original_quiz.questions:
-        new_question = Question(
-            quiz_id=new_quiz.id,
-            question_text=original_question.question_text,
-            question_type=original_question.question_type,
-            options=original_question.options,
-            correct_answers=original_question.correct_answers,
-            evaluation_criteria=original_question.evaluation_criteria,
-            points=original_question.points,
-            order_index=original_question.order_index
-        )
-        db.add(new_question)
-    
-    db.commit()
-    db.refresh(new_quiz)
-    return new_quiz
-
-@router.post("/{quiz_id}/attempt", response_model=QuizAttemptResponse, status_code=status.HTTP_201_CREATED)
-def submit_quiz_attempt(
-    quiz_id: int,
-    attempt_data: QuizAttemptCreate,
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
-):
-    """
-    Submit a quiz attempt (students only)
-    Handles both grila (multiple/single choice) and libre (free text) questions
-    """
-    if current_user.role.value != "student":
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Only students can submit quiz attempts"
-        )
-    
-    quiz = db.query(Quiz).filter(Quiz.id == quiz_id).first()
-    if not quiz:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Quiz not found"
-        )
-    
-    # Check if student is allocated to this quiz
-    if quiz.group_id:
-        # Quiz is assigned to a specific group
-        from src.models.student import Student
-        student = db.query(Student).filter(Student.id == current_user.id).first()
-        if not student:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="User is not a student"
-            )
-        
-        # Check if student is in the group
-        group = quiz.group
-        if student not in group.students:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="You are not allocated to this quiz. Only students in the assigned group can take it."
-            )
-    
-    # Calculate score
-    total_score = 0.0
-    max_score = 0.0
-    
-    for question in quiz.questions:
-        max_score += question.points
-        
-        # Get student's answers for this question
-        student_answers = attempt_data.answers.get(str(question.id), [])
-        if isinstance(student_answers, str):
-            student_answers = [student_answers]
-        
-        correct_answers = json.loads(question.correct_answers)
-        
-        # Score based on question type
-        if question.question_type == QuestionType.FREE_TEXT:
-            # For free text, use keyword matching
-            student_text = student_answers[0] if student_answers else ""
-            score, _ = score_free_text_answer(
-                student_text,
-                question.evaluation_criteria or "",
-                correct_answers
-            )
-            total_score += score * question.points
-        else:
-            # For grila (SINGLE_CHOICE, MULTIPLE_CHOICE), exact match
-            if set(student_answers) == set(correct_answers):
-                total_score += question.points
-    
-    # Create attempt
-    new_attempt = QuizAttempt(
-        quiz_id=quiz_id,
-        student_id=current_user.id,
-        answers=json.dumps({str(k): v for k, v in attempt_data.answers.items()}),
-        score=total_score,
-        max_score=max_score,
-        completed_at=datetime.utcnow()
-    )
-    
-    db.add(new_attempt)
-    db.commit()
-    db.refresh(new_attempt)
-    return new_attempt
-
-@router.get("/{quiz_id}/attempts", response_model=List[QuizAttemptResponse])
-def get_quiz_attempts(
-    quiz_id: int,
-    skip: int = Query(0, ge=0),
-    limit: int = Query(100, ge=1, le=100),
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
-):
-    """
-    Get all attempts for a quiz (quiz owner or admin only)
+    Create a copy of an existing quiz
     """
     quiz = db.query(Quiz).filter(Quiz.id == quiz_id).first()
     if not quiz:
@@ -414,44 +117,99 @@ def get_quiz_attempts(
     if quiz.professor_id != current_user.id and current_user.role.value != "administrator":
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Not authorized to view quiz attempts"
+            detail="Not authorized to copy this quiz"
         )
     
-    attempts = db.query(QuizAttempt).filter(
-        QuizAttempt.quiz_id == quiz_id
-    ).offset(skip).limit(limit).all()
-    
-    # Enrich attempts with student email and duration
-    result = []
-    for attempt in attempts:
-        attempt_dict = {
-            'id': attempt.id,
-            'quiz_id': attempt.quiz_id,
-            'student_id': attempt.student_id,
-            'score': attempt.score,
-            'max_score': attempt.max_score,
-            'started_at': attempt.started_at,
-            'completed_at': attempt.completed_at,
-            'time_remaining': attempt.time_remaining,
-            'is_expired': attempt.is_expired,
-        }
+    try:
+        # Create new quiz based on original
+        new_quiz = Quiz(
+            title=f"{quiz.title} (Copy)",
+            description=quiz.description,
+            subject=quiz.subject,
+            grade_level=quiz.grade_level,
+            time_limit=quiz.time_limit,
+            professor_id=current_user.id,
+            group_id=quiz.group_id  # Keep the same group
+        )
+        db.add(new_quiz)
+        db.flush()
         
-        # Get student email
-        from src.models.student import Student
-        student = db.query(Student).filter(Student.id == attempt.student_id).first()
-        if student and student.user:
-            attempt_dict['student_email'] = student.user.email
+        # Copy questions
+        for question in quiz.questions:
+            new_question = Question(
+                quiz_id=new_quiz.id,
+                question_text=question.question_text,
+                question_type=question.question_type,
+                options=question.options,
+                correct_answers=question.correct_answers,
+                evaluation_criteria=question.evaluation_criteria,
+                points=question.points,
+                order_index=question.order_index
+            )
+            db.add(new_question)
         
-        # Calculate duration if both timestamps exist
-        if attempt.started_at and attempt.completed_at:
-            duration = (attempt.completed_at - attempt.started_at).total_seconds()
-            attempt_dict['duration_seconds'] = int(duration)
-        
-        result.append(attempt_dict)
-    
-    return result
+        db.commit()
+        db.refresh(new_quiz)
+        return new_quiz
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to copy quiz: {str(e)}"
+        )
 
-@router.get("/attempts/{attempt_id}", response_model=QuizResultResponse)
+# ========== QUIZ ATTEMPT ROUTES (MUST BE BEFORE /{quiz_id} TO AVOID CONFLICTS) ==========
+
+@router.post("/start/{quiz_id}", response_model=QuizAttemptResponse, status_code=status.HTTP_201_CREATED)
+def start_quiz_attempt(
+    quiz_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Start a new quiz attempt or resume an existing one
+    Returns the attempt with initial time_remaining from server
+    """
+    quiz = db.query(Quiz).filter(Quiz.id == quiz_id).first()
+    if not quiz:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Quiz not found"
+        )
+    
+    # Check if user can take quiz
+    if current_user.role.value == "student":
+        # Students can only take non-AI quizzes or AI quizzes they haven't taken yet
+        existing_attempt = db.query(QuizAttempt).filter(
+            QuizAttempt.quiz_id == quiz_id,
+            QuizAttempt.student_id == current_user.id
+        ).first()
+        
+        if existing_attempt and existing_attempt.completed_at:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="You have already completed this quiz"
+            )
+    else:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only students can take quizzes"
+        )
+    
+    # Create new attempt
+    new_attempt = QuizAttempt(
+        quiz_id=quiz_id,
+        student_id=current_user.id,
+        started_at=datetime.utcnow(),
+        time_remaining=quiz.time_limit * 60 if quiz.time_limit else 3600
+    )
+    db.add(new_attempt)
+    db.commit()
+    db.refresh(new_attempt)
+    
+    return new_attempt
+
+@router.get("/attempt/{attempt_id}", response_model=QuizResultResponse)
 def get_quiz_result(
     attempt_id: int,
     db: Session = Depends(get_db),
@@ -592,205 +350,6 @@ def get_quiz_result(
         "question_scores": question_scores,
         "ai_evaluations": ai_evaluations  # Include detailed AI feedback
     }
-
-@router.post("/generate-ai", response_model=QuizResponse, status_code=status.HTTP_201_CREATED)
-def generate_ai_quiz(
-    request: AIQuizGenerateRequest,
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
-):
-    """
-    Generate a quiz using AI (professors only)
-    """
-    if current_user.role.value != "professor":
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Only professors can generate AI quizzes"
-        )
-    
-    # Import AI service
-    from src.services.quiz_service import generate_quiz_with_ai
-    
-    try:
-        quiz = generate_quiz_with_ai(request, current_user.id, db)
-        return quiz
-    except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to generate quiz: {str(e)}"
-        )
-
-@router.post("/generate-from-material/{material_id}", response_model=QuizResponse, status_code=status.HTTP_201_CREATED)
-def generate_quiz_from_material(
-    material_id: int,
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
-):
-    """
-    Generate a quiz from material content using AI
-    Creates 3 questions: single_choice, multiple_choice, free_text
-    Students can use this to practice based on material
-    """
-    # Get material
-    from src.models.material import Material
-    material = db.query(Material).filter(Material.id == material_id).first()
-    if not material:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Material not found"
-        )
-    
-    # Check if user has access to material (professor who created it, or any user if public)
-    if material.visibility == "private" and material.professor_id != current_user.id:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="You don't have access to this material"
-        )
-    
-    try:
-        from src.services.quiz_generation_service import get_quiz_generation_service
-        from src.utils.pdf_extractor import extract_text_from_multiple_pdfs
-        from src.utils.helpers import parse_json_field
-        quiz_gen = get_quiz_generation_service()
-        
-        # Prepare content from material + attached PDFs
-        material_content = material.content or material.description or ""
-        
-        # Extract content from attached PDF files
-        if material.file_paths:
-            try:
-                file_paths = parse_json_field(material.file_paths)
-                if file_paths:
-                    pdf_content = extract_text_from_multiple_pdfs(file_paths)
-                    if pdf_content:
-                        material_content += f"\n\n--- Content from attached files ---\n{pdf_content}"
-            except Exception as e:
-                logger.warning(f"Failed to extract PDF content: {str(e)}")
-                # Continue anyway, just use material content
-        
-        # Generate quiz data from combined content
-        quiz_data = quiz_gen.generate_quiz_from_material(
-            material_title=material.title,
-            material_content=material_content,
-            subject=material.subject or "General Knowledge",
-            grade_level=material.grade_level or 10
-        )
-        
-        # Create quiz in database
-        new_quiz = Quiz(
-            title=quiz_data.get("title", f"Quiz - {material.title}"),
-            description=quiz_data.get("description", f"Practice quiz from material: {material.title}"),
-            subject=quiz_data.get("subject", material.subject),
-            grade_level=quiz_data.get("grade_level", material.grade_level),
-            professor_id=current_user.id if current_user.role.value == "professor" else material.professor_id,
-            is_ai_generated=True,
-            time_limit=30  # 30 minutes default
-        )
-        
-        db.add(new_quiz)
-        db.flush()  # Get quiz ID
-        
-        # Add questions
-        for idx, question_data in enumerate(quiz_data.get("questions", [])):
-            options = question_data.get("options")
-            correct_answers = question_data.get("correct_answers", [])
-            
-            question = Question(
-                quiz_id=new_quiz.id,
-                question_text=question_data.get("question_text"),
-                question_type=question_data.get("question_type"),
-                options=json.dumps(options) if options else None,
-                correct_answers=json.dumps(correct_answers),
-                evaluation_criteria=question_data.get("evaluation_criteria"),
-                points=question_data.get("points", 1.0),
-                order_index=idx
-            )
-            db.add(question)
-        
-        db.commit()
-        db.refresh(new_quiz)
-        
-        return new_quiz
-        
-    except Exception as e:
-        db.rollback()
-        logger.error(f"Failed to generate quiz from material: {str(e)}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to generate quiz: {str(e)}"
-        )
-
-# NEW ENDPOINTS FOR TIMER PERSISTENCE AND AUTO-SUBMISSION
-
-@router.post("/start/{quiz_id}", response_model=QuizAttemptResponse, status_code=status.HTTP_201_CREATED)
-def start_quiz_attempt(
-    quiz_id: int,
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
-):
-    """
-    Start a new quiz attempt or resume an existing one
-    Returns the attempt with initial time_remaining set
-    """
-    if current_user.role.value != "student":
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Only students can start quiz attempts"
-        )
-    
-    from src.models.student import Student
-    
-    quiz = db.query(Quiz).filter(Quiz.id == quiz_id).first()
-    if not quiz:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Quiz not found"
-        )
-    
-    # Check if student is allocated to this quiz
-    if quiz.group_id:
-        student = db.query(Student).filter(Student.id == current_user.id).first()
-        if not student or quiz.group_id not in [g.id for g in student.groups]:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="You are not allocated to this quiz"
-            )
-    
-    # Check if there's an active attempt (not completed)
-    existing_attempt = db.query(QuizAttempt).filter(
-        QuizAttempt.quiz_id == quiz_id,
-        QuizAttempt.student_id == current_user.id,
-        QuizAttempt.completed_at.is_(None)
-    ).first()
-    
-    if existing_attempt:
-        # Resume existing attempt - recalculate remaining time
-        time_elapsed = (datetime.utcnow() - existing_attempt.started_at).total_seconds()
-        total_time_seconds = quiz.time_limit * 60 if quiz.time_limit else 3600
-        time_remaining = max(0, int(total_time_seconds - time_elapsed))
-        
-        existing_attempt.time_remaining = time_remaining
-        if time_remaining <= 0:
-            existing_attempt.is_expired = 1
-        
-        db.commit()
-        db.refresh(existing_attempt)
-        return existing_attempt
-    
-    # Create new attempt
-    new_attempt = QuizAttempt(
-        quiz_id=quiz_id,
-        student_id=current_user.id,
-        started_at=datetime.utcnow(),
-        time_remaining=(quiz.time_limit * 60) if quiz.time_limit else 3600,
-        is_expired=0
-    )
-    
-    db.add(new_attempt)
-    db.commit()
-    db.refresh(new_attempt)
-    
-    return new_attempt
 
 @router.put("/attempts/{attempt_id}/timer-sync", response_model=QuizAttemptResponse)
 def sync_timer(
@@ -1004,4 +563,427 @@ def delete_quiz_attempt(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to delete attempt"
+        )
+
+@router.get("/{quiz_id}", response_model=QuizResponse)
+def get_quiz(
+    quiz_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Get quiz details with all questions
+    - Professors can see only their own quizzes
+    - Students can see quizzes available to them
+    """
+    quiz = db.query(Quiz).filter(Quiz.id == quiz_id).first()
+    if not quiz:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Quiz not found"
+        )
+    
+    # Authorization check
+    if current_user.role.value == "professor":
+        if quiz.professor_id != current_user.id:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="You don't have permission to view this quiz"
+            )
+    elif current_user.role.value == "student":
+        # Check if student has access to this quiz
+        if quiz.group_id:
+            from src.models.student import Student
+            student = db.query(Student).filter(Student.id == current_user.id).first()
+            if not student or quiz.group_id not in [g.id for g in student.groups]:
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail="You don't have access to this quiz"
+                )
+    
+    return quiz
+
+@router.post("/", response_model=QuizResponse, status_code=status.HTTP_201_CREATED)
+def create_quiz(
+    quiz_data: QuizCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Create a new quiz (professors only)
+    """
+    if current_user.role.value != "professor":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only professors can create quizzes"
+        )
+    
+    # Verify professor exists
+    professor = db.query(Professor).filter(Professor.id == current_user.id).first()
+    if not professor:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Professor profile not found"
+        )
+    
+    # Create quiz
+    quiz_dict = quiz_data.model_dump(exclude={'questions'})
+    new_quiz = Quiz(
+        **quiz_dict,
+        professor_id=current_user.id
+    )
+    
+    db.add(new_quiz)
+    db.flush()  # Get quiz ID
+    
+    # Add questions
+    for idx, question_data in enumerate(quiz_data.questions):
+        question_dict = question_data.model_dump()
+        options = question_dict.pop('options', None)
+        correct_answers = question_dict.pop('correct_answers', [])
+        
+        question = Question(
+            **question_dict,
+            quiz_id=new_quiz.id,
+            order_index=idx,
+            options=json.dumps(options) if options else None,
+            correct_answers=json.dumps(correct_answers)
+        )
+        db.add(question)
+    
+    db.commit()
+    db.refresh(new_quiz)
+    return new_quiz
+
+@router.put("/{quiz_id}", response_model=QuizResponse)
+def update_quiz(
+    quiz_id: int,
+    quiz_data: QuizUpdate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Update a quiz (owner or admin only)
+    """
+    quiz = db.query(Quiz).filter(Quiz.id == quiz_id).first()
+    if not quiz:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Quiz not found"
+        )
+    
+    # Check permissions
+    if quiz.professor_id != current_user.id and current_user.role.value != "administrator":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Not authorized to update this quiz"
+        )
+    
+    # Update fields
+    update_data = quiz_data.model_dump(exclude_unset=True)
+    for field, value in update_data.items():
+        setattr(quiz, field, value)
+    
+    db.commit()
+    db.refresh(quiz)
+    return quiz
+
+@router.delete("/{quiz_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_quiz(
+    quiz_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Delete a quiz (owner or admin only)
+    """
+    quiz = db.query(Quiz).filter(Quiz.id == quiz_id).first()
+    if not quiz:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Quiz not found"
+        )
+    
+    # Check permissions
+    if quiz.professor_id != current_user.id and current_user.role.value != "administrator":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Not authorized to delete this quiz"
+        )
+    
+    db.delete(quiz)
+    db.commit()
+    return None
+
+@router.post("/{quiz_id}/attempt", response_model=QuizAttemptResponse, status_code=status.HTTP_201_CREATED)
+def submit_quiz_attempt(
+    quiz_id: int,
+    attempt_data: QuizAttemptCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Submit a quiz attempt (students only)
+    Handles both grila (multiple/single choice) and libre (free text) questions
+    """
+    if current_user.role.value != "student":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only students can submit quiz attempts"
+        )
+    
+    quiz = db.query(Quiz).filter(Quiz.id == quiz_id).first()
+    if not quiz:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Quiz not found"
+        )
+    
+    # Check if student is allocated to this quiz
+    if quiz.group_id:
+        # Quiz is assigned to a specific group
+        from src.models.student import Student
+        student = db.query(Student).filter(Student.id == current_user.id).first()
+        if not student:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="User is not a student"
+            )
+        
+        # Check if student is in the group
+        group = quiz.group
+        if student not in group.students:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="You are not allocated to this quiz. Only students in the assigned group can take it."
+            )
+    
+    # Calculate score
+    total_score = 0.0
+    max_score = 0.0
+    
+    for question in quiz.questions:
+        max_score += question.points
+        
+        # Get student's answers for this question
+        student_answers = attempt_data.answers.get(str(question.id), [])
+        if isinstance(student_answers, str):
+            student_answers = [student_answers]
+        
+        correct_answers = json.loads(question.correct_answers)
+        
+        # Score based on question type
+        if question.question_type == QuestionType.FREE_TEXT:
+            # For free text, use keyword matching
+            student_text = student_answers[0] if student_answers else ""
+            score, _ = score_free_text_answer(
+                student_text,
+                question.evaluation_criteria or "",
+                correct_answers
+            )
+            total_score += score * question.points
+        else:
+            # For grila (SINGLE_CHOICE, MULTIPLE_CHOICE), exact match
+            if set(student_answers) == set(correct_answers):
+                total_score += question.points
+    
+    # Create attempt
+    new_attempt = QuizAttempt(
+        quiz_id=quiz_id,
+        student_id=current_user.id,
+        answers=json.dumps({str(k): v for k, v in attempt_data.answers.items()}),
+        score=total_score,
+        max_score=max_score,
+        completed_at=datetime.utcnow()
+    )
+    
+    db.add(new_attempt)
+    db.commit()
+    db.refresh(new_attempt)
+    return new_attempt
+
+@router.get("/{quiz_id}/attempts", response_model=List[QuizAttemptResponse])
+def get_quiz_attempts(
+    quiz_id: int,
+    skip: int = Query(0, ge=0),
+    limit: int = Query(100, ge=1, le=100),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Get all attempts for a quiz (quiz owner or admin only)
+    """
+    quiz = db.query(Quiz).filter(Quiz.id == quiz_id).first()
+    if not quiz:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Quiz not found"
+        )
+    
+    # Check permissions
+    if quiz.professor_id != current_user.id and current_user.role.value != "administrator":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Not authorized to view quiz attempts"
+        )
+    
+    attempts = db.query(QuizAttempt).filter(
+        QuizAttempt.quiz_id == quiz_id
+    ).offset(skip).limit(limit).all()
+    
+    # Enrich attempts with student email and duration
+    result = []
+    for attempt in attempts:
+        attempt_dict = {
+            'id': attempt.id,
+            'quiz_id': attempt.quiz_id,
+            'student_id': attempt.student_id,
+            'score': attempt.score,
+            'max_score': attempt.max_score,
+            'started_at': attempt.started_at,
+            'completed_at': attempt.completed_at,
+            'time_remaining': attempt.time_remaining,
+            'is_expired': attempt.is_expired,
+        }
+        
+        # Get student email
+        from src.models.student import Student
+        student = db.query(Student).filter(Student.id == attempt.student_id).first()
+        if student and student.user:
+            attempt_dict['student_email'] = student.user.email
+        
+        # Calculate duration if both timestamps exist
+        if attempt.started_at and attempt.completed_at:
+            duration = (attempt.completed_at - attempt.started_at).total_seconds()
+            attempt_dict['duration_seconds'] = int(duration)
+        
+        result.append(attempt_dict)
+    
+    return result
+
+@router.post("/generate-ai", response_model=QuizResponse, status_code=status.HTTP_201_CREATED)
+def generate_ai_quiz(
+    request: AIQuizGenerateRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Generate a quiz using AI (professors only)
+    """
+    if current_user.role.value != "professor":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only professors can generate AI quizzes"
+        )
+    
+    # Import AI service
+    from src.services.quiz_service import generate_quiz_with_ai
+    
+    try:
+        quiz = generate_quiz_with_ai(request, current_user.id, db)
+        return quiz
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to generate quiz: {str(e)}"
+        )
+
+@router.post("/generate-from-material/{material_id}", response_model=QuizResponse, status_code=status.HTTP_201_CREATED)
+def generate_quiz_from_material(
+    material_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Generate a quiz from material content using AI
+    Creates 3 questions: single_choice, multiple_choice, free_text
+    Students can use this to practice based on material
+    """
+    # Get material
+    from src.models.material import Material
+    material = db.query(Material).filter(Material.id == material_id).first()
+    if not material:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Material not found"
+        )
+    
+    # Check if user has access to material (professor who created it, or any user if public)
+    if material.visibility == "private" and material.professor_id != current_user.id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You don't have access to this material"
+        )
+    
+    try:
+        from src.services.quiz_generation_service import get_quiz_generation_service
+        from src.utils.pdf_extractor import extract_text_from_multiple_pdfs
+        from src.utils.helpers import parse_json_field
+        quiz_gen = get_quiz_generation_service()
+        
+        # Prepare content from material + attached PDFs
+        material_content = material.content or material.description or ""
+        
+        # Extract content from attached PDF files
+        if material.file_paths:
+            try:
+                file_paths = parse_json_field(material.file_paths)
+                if file_paths:
+                    pdf_content = extract_text_from_multiple_pdfs(file_paths)
+                    if pdf_content:
+                        material_content += f"\n\n--- Content from attached files ---\n{pdf_content}"
+            except Exception as e:
+                logger.warning(f"Failed to extract PDF content: {str(e)}")
+                # Continue anyway, just use material content
+        
+        # Generate quiz data from combined content
+        quiz_data = quiz_gen.generate_quiz_from_material(
+            material_title=material.title,
+            material_content=material_content,
+            subject=material.subject or "General Knowledge",
+            grade_level=material.grade_level or 10
+        )
+        
+        # Create quiz in database
+        new_quiz = Quiz(
+            title=quiz_data.get("title", f"Quiz - {material.title}"),
+            description=quiz_data.get("description", f"Practice quiz from material: {material.title}"),
+            subject=quiz_data.get("subject", material.subject),
+            grade_level=quiz_data.get("grade_level", material.grade_level),
+            professor_id=current_user.id if current_user.role.value == "professor" else material.professor_id,
+            is_ai_generated=True,
+            time_limit=30  # 30 minutes default
+        )
+        
+        db.add(new_quiz)
+        db.flush()  # Get quiz ID
+        
+        # Add questions
+        for idx, question_data in enumerate(quiz_data.get("questions", [])):
+            options = question_data.get("options")
+            correct_answers = question_data.get("correct_answers", [])
+            
+            question = Question(
+                quiz_id=new_quiz.id,
+                question_text=question_data.get("question_text"),
+                question_type=question_data.get("question_type"),
+                options=json.dumps(options) if options else None,
+                correct_answers=json.dumps(correct_answers),
+                evaluation_criteria=question_data.get("evaluation_criteria"),
+                points=question_data.get("points", 1.0),
+                order_index=idx
+            )
+            db.add(question)
+        
+        db.commit()
+        db.refresh(new_quiz)
+        
+        return new_quiz
+        
+    except Exception as e:
+        db.rollback()
+        logger.error(f"Failed to generate quiz from material: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to generate quiz: {str(e)}"
         )

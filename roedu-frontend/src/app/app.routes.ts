@@ -155,6 +155,8 @@ export const routes: Routes = [
           ),
       },
     ],
+  },
+  {
     path: 'feed',
     canActivate: [AuthGuard],
     loadComponent: () =>
