@@ -377,6 +377,180 @@ def seed_initial_data(session: Session) -> None:
             session.add(q2_3)
 
             created_any = True
+        
+        # Add public materials for testing AI quiz generation
+        from src.models.material import Material, VisibilityType
+        prof_ana_id = professor_map.get("ana.popescu@roedu.ro")
+        
+        if prof_ana_id:
+            # Check if materials already exist
+            existing_materials = session.query(Material).filter(Material.professor_id == prof_ana_id).count()
+            
+            if existing_materials == 0:
+                # Material 1: Algebra Basics
+                material1 = Material(
+                    title="Numere Intregi - Operatii Fundamentale",
+                    description="Introducere in numere intregi si operatiile fundamentale cu acestea",
+                    content="""
+                    NUMERE INTREGI - CURS COMPLET
+                    
+                    1. DEFINITIE
+                    Numerele intregi sunt numere care nu au parte zecimala. Includ numere pozitive, negative si zero.
+                    Multimea numerelor intregi se noteaza cu Z = {..., -3, -2, -1, 0, 1, 2, 3, ...}
+                    
+                    2. OPERATII CU NUMERE INTREGI
+                    
+                    A) ADUNAREA
+                    - Pentru numere cu acelasi semn: adunate se valori absolute, rezultatul pastreaza semnul
+                    - Pentru numere cu semne diferite: se scade valoarea mai mica din cea mai mare, rezultatul pastreaza semnul celui mai mare
+                    Exemple: 5 + 3 = 8, -5 + (-3) = -8, 5 + (-3) = 2, -5 + 3 = -2
+                    
+                    B) SCADEREA
+                    Scaderea unui numar intreg este egala cu adunarea opusului sau
+                    a - b = a + (-b)
+                    Exemple: 7 - 3 = 4, 7 - (-3) = 7 + 3 = 10
+                    
+                    C) INMULTIREA
+                    Regula semnelor:
+                    - pozitiv × pozitiv = pozitiv
+                    - negativ × negativ = pozitiv
+                    - pozitiv × negativ = negativ
+                    - negativ × pozitiv = negativ
+                    Exemple: 3 × 4 = 12, (-3) × (-4) = 12, 3 × (-4) = -12
+                    
+                    D) IMPARTIREA
+                    Aceleasi reguli de semn ca la inmultire
+                    Impartirea se efectueaza doar daca rezultatul este numar intreg
+                    Exemple: 12 ÷ 3 = 4, (-12) ÷ (-3) = 4, 12 ÷ (-3) = -4
+                    
+                    3. PRIORITATEA OPERATIILOR
+                    1. Operatiile din paranteze (daca exista)
+                    2. Inmultirea si impartirea (de la stanga la dreapta)
+                    3. Adunarea si scaderea (de la stanga la dreapta)
+                    
+                    Exemplu: 2 + 3 × 4 - 5 = 2 + 12 - 5 = 9
+                    """,
+                    subject="Matematica",
+                    grade_level=9,
+                    visibility=VisibilityType.PUBLIC,
+                    is_shared=1,
+                    professor_id=prof_ana_id,
+                    created_at=datetime.utcnow()
+                )
+                session.add(material1)
+                
+                # Material 2: Geometry Introduction
+                material2 = Material(
+                    title="Teorema Pitagora - Fundamentals",
+                    description="Curs complet despre Teorema lui Pitagora si aplicatiile ei in geometrie",
+                    content="""
+                    TEOREMA PITAGORA - CURS COMPLET
+                    
+                    1. FORMULARE
+                    In orice triunghi dreptunghic, patratul lungimii ipotenuzei este egal cu suma patratelor lungimilor catetelor.
+                    Formula: c² = a² + b²
+                    unde:
+                    - c este ipotenuza (latura opusa unghiului drept)
+                    - a si b sunt catetele (laturile care formeaza unghiul drept)
+                    
+                    2. DEMONSTRATIE GEOMETRICA
+                    Teorema Pitagora se poate demonstra geometric folosind arii de patrate.
+                    Daca desenam patrate pe fiecare latura a unui triunghi dreptunghic, suma ariilor patratelor construite pe catete
+                    este egala cu aria patratului construit pe ipotenuza.
+                    
+                    3. EXEMPLE PRACTICE
+                    
+                    Exemplu 1: Triunghi cu catetele 3 si 4
+                    c² = 3² + 4² = 9 + 16 = 25
+                    c = √25 = 5
+                    Raspuns: Ipotenuza = 5
+                    
+                    Exemplu 2: Triunghi cu catetele 5 si 12
+                    c² = 5² + 12² = 25 + 144 = 169
+                    c = √169 = 13
+                    Raspuns: Ipotenuza = 13
+                    
+                    4. APLICATII PRACTICE
+                    - Constructii: calculul diagonalelor in constructii
+                    - Navigatie: determinarea distantelor
+                    - Cartografie: masurarea distantelor pe harta
+                    - Inginerie: proiectarea structurilor
+                    
+                    5. TRIPLETE PITAGORICE CUNOSCUTE
+                    (3, 4, 5), (5, 12, 13), (8, 15, 17), (7, 24, 25), (9, 40, 41)
+                    """,
+                    subject="Matematica",
+                    grade_level=11,
+                    visibility=VisibilityType.PUBLIC,
+                    is_shared=1,
+                    professor_id=prof_ana_id,
+                    created_at=datetime.utcnow()
+                )
+                session.add(material2)
+                
+                # Material 3: English Vocabulary
+                prof_elena_id = professor_map.get("elena.marinescu@roedu.ro")
+                if prof_elena_id:
+                    material3 = Material(
+                        title="Engleza - Business Vocabulary",
+                        description="Vocabular esential pentru vorbirea de afaceri in limba engleza",
+                        content="""
+                        BUSINESS ENGLISH VOCABULARY
+                        
+                        1. OFFICE VOCABULARY
+                        - Office = birou
+                        - Desk = birou (mobilier)
+                        - Meeting = intalnire
+                        - Conference = conferinta
+                        - Presentation = prezentare
+                        - Report = raport
+                        - Deadline = termen limita
+                        - Project = proiect
+                        
+                        2. BUSINESS COMMUNICATION
+                        - Email = e-mail
+                        - Memo = nota interna
+                        - Letter = scrisoare
+                        - Call = apel telefonic
+                        - Conference call = conferinta telefonica
+                        - Videoconference = videoconferinta
+                        - Webinar = webinar
+                        
+                        3. FINANCIAL TERMS
+                        - Budget = buget
+                        - Profit = profit
+                        - Loss = pierdere
+                        - Revenue = venit
+                        - Expense = cheltuiala
+                        - Invoice = factura
+                        - Payment = plata
+                        - Account = cont
+                        
+                        4. COMPANY STRUCTURE
+                        - CEO = Director General
+                        - Manager = Manager
+                        - Employee = Angajat
+                        - Colleague = Coleg
+                        - Department = Departament
+                        - Team = Echipa
+                        - Division = Divizie
+                        
+                        5. USEFUL BUSINESS PHRASES
+                        - "Can you send me the report?" = "Poti sa-mi trimiti raportul?"
+                        - "What is the deadline?" = "Care este termenul limita?"
+                        - "Let's schedule a meeting" = "Sa programam o intalnire"
+                        - "I'll follow up with you" = "Te voi contacta ulterior"
+                        """,
+                        subject="Engleza",
+                        grade_level=10,
+                        visibility=VisibilityType.PUBLIC,
+                        is_shared=1,
+                        professor_id=prof_elena_id,
+                        created_at=datetime.utcnow()
+                    )
+                    session.add(material3)
+                
+                print("✅ Added 3 public materials for testing!")
 
         if created_any:
             session.commit()
@@ -384,6 +558,7 @@ def seed_initial_data(session: Session) -> None:
             print(f"   - Professors: {len(professor_map)}")
             print(f"   - Students: {len(student_map)}")
             print(f"   - Quizzes created with mixed question types (single choice, multiple choice, free text)")
+            print(f"   - Public materials for AI quiz generation testing")
     except Exception as e:
         session.rollback()
         print(f"❌ Error seeding data: {e}")
