@@ -112,30 +112,36 @@ import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
             <div class="interaction-buttons">
               <!-- Like buttons - disabled (preview only) -->
               @if (isProfessor() || material.visibility === 'public') {
-              <button class="btn-interaction btn-professor" disabled>
+              <button 
+                class="btn-interaction btn-professor" 
+                disabled
+                title="Like-uri de la profesori">
                 <span class="stat-icon">💡</span>
                 <span class="stat-value">{{
                   material.feedback_professors_count
                 }}</span>
-                <span class="stat-label">Profesori</span>
               </button>
               } @if (material.visibility === 'public') {
-              <button class="btn-interaction btn-student" disabled>
+              <button 
+                class="btn-interaction btn-student" 
+                disabled
+                title="Like-uri de la elevi">
                 <span class="stat-icon">⭐</span>
                 <span class="stat-value">{{
                   material.feedback_students_count
                 }}</span>
-                <span class="stat-label">Elevi</span>
               </button>
               }
 
               <!-- Comments button - disabled (preview only) -->
-              <button class="btn-interaction btn-comments" disabled>
+              <button 
+                class="btn-interaction btn-comments" 
+                disabled
+                title="Comentarii">
                 <span class="stat-icon">💬</span>
                 <span class="stat-value">{{
                   material.comments_count || 0
                 }}</span>
-                <span class="stat-label">Comentarii</span>
               </button>
             </div>
 
@@ -423,48 +429,62 @@ import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 
       .btn-interaction {
         display: flex;
-        flex-direction: column;
+        flex-direction: row;
         align-items: center;
-        gap: 0.25rem;
-        padding: 0.5rem 0.75rem;
+        gap: 0.5rem;
+        padding: 0.5rem 0.875rem;
         background: white;
         border: 2px solid #e2e8f0;
-        border-radius: 8px;
+        border-radius: 10px;
         cursor: not-allowed;
         transition: all 0.3s;
-        opacity: 0.8;
+        opacity: 0.85;
+        min-width: 65px;
+      }
+
+      .btn-interaction:hover {
+        opacity: 1;
+        transform: translateY(-1px);
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
       }
 
       .btn-interaction .stat-icon {
-        font-size: 1.3rem;
+        font-size: 1.4rem;
+        line-height: 1;
       }
 
       .btn-interaction .stat-value {
-        font-size: 0.95rem;
-        font-weight: bold;
+        font-size: 1rem;
+        font-weight: 600;
         color: #2d3748;
-      }
-
-      .btn-interaction .stat-label {
-        font-size: 0.7rem;
-        color: #718096;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
+        line-height: 1;
       }
 
       .btn-interaction.btn-professor {
-        border-color: #d6bcfa;
-        background: #faf5ff;
+        border-color: #c4b5fd;
+        background: linear-gradient(135deg, #faf5ff 0%, #f3e8ff 100%);
+      }
+
+      .btn-interaction.btn-professor .stat-value {
+        color: #7c3aed;
       }
 
       .btn-interaction.btn-student {
-        border-color: #fbd38d;
-        background: #fffaf0;
+        border-color: #fbbf24;
+        background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);
+      }
+
+      .btn-interaction.btn-student .stat-value {
+        color: #d97706;
       }
 
       .btn-interaction.btn-comments {
-        border-color: #90cdf4;
-        background: #ebf8ff;
+        border-color: #60a5fa;
+        background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+      }
+
+      .btn-interaction.btn-comments .stat-value {
+        color: #2563eb;
       }
 
       .stat {
