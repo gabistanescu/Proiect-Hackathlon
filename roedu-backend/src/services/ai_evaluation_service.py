@@ -128,13 +128,18 @@ SCALA DE PUNCTARE:
 
 Furnizează evaluarea în următorul format JSON (TREBUIE SĂ FIE JSON VALID):
 {{
-    "score": <număr între 0 și {int(max_score)}>,
+    "score": <punctajul final (0-{int(max_score)})>,
     "feedback": "<Feedback cuprinzător care abordează toate aspectele răspunsului>",
     "reasoning": "<Explicație scurtă a motivului pentru care acest punctaj a fost atribuit>",
+    "score_breakdown_percentage": {{
+        "correctness_percent": <0-100 (procentul din punctajul final pentru corectitudine)>,
+        "completeness_percent": <0-100 (procentul din punctajul final pentru completitudine)>,
+        "clarity_percent": <0-100 (procentul din punctajul final pentru claritate)>
+    }},
     "score_breakdown": {{
-        "correctness": <0-{int(max_score)}>,
-        "completeness": <0-{int(max_score)}>,
-        "clarity": <0-{int(max_score)}>
+        "corectitudine": <puncte din {int(max_score)} pentru corectitudine>,
+        "completitudine": <puncte din {int(max_score)} pentru completitudine>,
+        "claritate": <puncte din {int(max_score)} pentru claritate>
     }},
     "strengths": [
         "<Punct forte specific 1 - ce a făcut bine studentul>",
@@ -153,9 +158,17 @@ Furnizează evaluarea în următorul format JSON (TREBUIE SĂ FIE JSON VALID):
     ]
 }}
 
+EXPLICAȚII:
+- \"score\": punctajul FINAL al răspunsului (ex: 35 din {int(max_score)})
+- \"corectitudine\": câte puncte merită răspunsul pentru a fi corect (din {int(max_score)})
+- \"completitudine\": câte puncte merită pentru a aborda toate aspectele (din {int(max_score)})
+- \"claritate\": câte puncte merită pentru claritate și structură (din {int(max_score)})
+- Suma celor 3 componente = \"score\" final
+
 CERINȚE IMPORTANTE:
-- Răspunde DOAR cu JSON valid, fără markdown, fără text explicativ
-- Punctajul trebuie să fie un întreg sau zecimal între 0 și {int(max_score)}
+- \"score\" trebuie să fie între 0 și {int(max_score)}
+- Fiecare componentă din score_breakdown trebuie să fie între 0 și {int(max_score)}
+- Suma celor 3 componente din score_breakdown = score final
 - Feedback-ul trebuie să fie detaliat și profesional ÎN LIMBA ROMÂNĂ
 - Punctele forte, îmbunătățirile și sugestiile trebuie să fie specifice și acționabile
 - Toate array-urile trebuie să conțină cel puțin 2-3 elemente"""
@@ -190,6 +203,16 @@ CERINȚE IMPORTANTE:
             
             # Extract detailed feedback components
             score_breakdown = data.get("score_breakdown", {})
+            
+            # Normalize Romanian field names to English for consistency
+            # AI returns: {"corectitudine": X, "completitudine": Y, "claritate": Z}
+            # We convert to: {"correctness": X, "completeness": Y, "clarity": Z}
+            normalized_breakdown = {}
+            if score_breakdown:
+                normalized_breakdown["correctness"] = score_breakdown.get("corectitudine", 0)
+                normalized_breakdown["completeness"] = score_breakdown.get("completitudine", 0)
+                normalized_breakdown["clarity"] = score_breakdown.get("claritate", 0)
+            
             strengths = data.get("strengths", [])
             improvements = data.get("improvements", [])
             suggestions = data.get("suggestions", [])
@@ -200,7 +223,7 @@ CERINȚE IMPORTANTE:
                 "question_type": question_type,
                 "max_score": max_score,
                 "reasoning": reasoning,
-                "score_breakdown": score_breakdown,
+                "score_breakdown": normalized_breakdown,
                 "strengths": strengths,
                 "improvements": improvements,
                 "suggestions": suggestions,

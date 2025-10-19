@@ -872,7 +872,18 @@ export class QuizResultsComponent implements OnInit {
 
   getScoreBreakdownItems(breakdown: { [key: string]: number } | undefined): { label: string, value: number }[] {
     if (!breakdown) return [];
-    return Object.entries(breakdown).map(([label, value]) => ({ label, value }));
+    
+    // Map English keys to Romanian labels
+    const labelMap: { [key: string]: string } = {
+      'correctness': 'Corectitudine',
+      'completeness': 'Completitudine',
+      'clarity': 'Claritate'
+    };
+    
+    return Object.entries(breakdown).map(([key, value]) => ({
+      label: labelMap[key] || key,
+      value: value
+    }));
   }
 
   openReportForm(questionId: number): void {
