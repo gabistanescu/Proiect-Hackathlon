@@ -108,6 +108,8 @@ class QuizAttemptResponse(BaseModel):
     completed_at: Optional[datetime] = None
     time_remaining: Optional[int] = None  # in seconds
     is_expired: int = 0
+    student_email: Optional[str] = None  # Student email for professor view
+    duration_seconds: Optional[int] = None  # Total time spent on quiz
     
     model_config = ConfigDict(from_attributes=True)
 

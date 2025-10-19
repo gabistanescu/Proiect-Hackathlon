@@ -1,6 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { QuizService } from '../../services/quiz.service';
 
 interface QuizAttempt {
@@ -11,12 +12,14 @@ interface QuizAttempt {
   started_at: string;
   completed_at: string;
   student_name?: string;
+  student_email?: string;
+  duration_seconds?: number;
 }
 
 @Component({
   selector: 'app-quiz-results-list',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, FormsModule],
   template: `
     <div class="results-list-container">
       <!-- Loading State -->
@@ -51,14 +54,28 @@ interface QuizAttempt {
 
         <!-- Results Table -->
         <div *ngIf="attempts.length > 0" class="results-table-wrapper">
+          <!-- Sort Controls -->
+          <div class="sort-controls">
+            <label>Sortare:</label>
+            <select [(ngModel)]="sortBy" (change)="sortAttempts()" class="sort-select">
+              <option value="date_desc">Data Finalizare (Descrescător)</option>
+              <option value="date_asc">Data Finalizare (Crescător)</option>
+              <option value="score_desc">Nota (Descrescător)</option>
+              <option value="score_asc">Nota (Crescător)</option>
+              <option value="time_desc">Timp Lucrării (Descrescător)</option>
+              <option value="time_asc">Timp Lucrării (Crescător)</option>
+              <option value="student_asc">Student (A-Z)</option>
+            </select>
+          </div>
+
           <table class="results-table">
             <thead>
               <tr>
                 <th>#</th>
-                <th>Student</th>
+                <th>Email Student</th>
                 <th>Scor</th>
                 <th>Procent</th>
-                <th>Data Inceput</th>
+                <th>Timp Lucrării</th>
                 <th>Data Finalizare</th>
                 <th>Acțiuni</th>
               </tr>
@@ -66,7 +83,7 @@ interface QuizAttempt {
             <tbody>
               <tr *ngFor="let attempt of attempts; let i = index" [ngClass]="getRowClass(attempt)">
                 <td class="num">{{ i + 1 }}</td>
-                <td class="student-name">{{ attempt.student_name || 'Elev ' + attempt.student_id }}</td>
+                <td class="student-email">{{ attempt.student_email || 'student_' + attempt.student_id + '@example.com' }}</td>
                 <td class="score">
                   {{ attempt.score }}/{{ attempt.max_score }}
                 </td>
@@ -75,7 +92,7 @@ interface QuizAttempt {
                     {{ getScorePercent(attempt) }}%
                   </span>
                 </td>
-                <td class="date">{{ formatDate(attempt.started_at) }}</td>
+                <td class="duration">{{ formatDuration(attempt) }}</td>
                 <td class="date">{{ formatDate(attempt.completed_at) }}</td>
                 <td class="actions">
                   <button class="btn btn-sm btn-primary" (click)="viewDetails(attempt.id)">
@@ -314,6 +331,40 @@ interface QuizAttempt {
       text-align: center;
     }
 
+    .sort-controls {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 15px;
+      padding: 10px 15px;
+      background: #f0f0f0;
+      border-radius: 6px;
+      border: 1px solid #eee;
+    }
+
+    .sort-controls label {
+      font-size: 14px;
+      color: #555;
+      font-weight: 600;
+    }
+
+    .sort-select {
+      padding: 8px 12px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      font-size: 14px;
+      color: #333;
+      background-color: #fff;
+      cursor: pointer;
+      transition: border-color 0.2s;
+    }
+
+    .sort-select:focus {
+      outline: none;
+      border-color: #667eea;
+      box-shadow: 0 0 0 2px #667eea;
+    }
+
     @media (max-width: 768px) {
       .results-header {
         flex-direction: column;
@@ -340,6 +391,7 @@ export class QuizResultsListComponent implements OnInit {
   isLoading = true;
   errorMessage: string | null = null;
   quizTitle = '';
+  sortBy: string = 'date_desc'; // Default sort
 
   constructor(
     private route: ActivatedRoute,
@@ -360,6 +412,7 @@ export class QuizResultsListComponent implements OnInit {
       next: (attempts) => {
         this.attempts = attempts;
         this.isLoading = false;
+        this.sortAttempts(); // Apply default sort after loading
       },
       error: () => {
         this.errorMessage = 'Nu s-au putut încărca rezultatele. Te rog încearcă din nou.';
@@ -408,6 +461,50 @@ export class QuizResultsListComponent implements OnInit {
       day: '2-digit',
       hour: '2-digit',
       minute: '2-digit'
+    });
+  }
+
+  formatDuration(attempt: QuizAttempt): string {
+    if (attempt.duration_seconds === undefined || attempt.duration_seconds === null) {
+      return '-';
+    }
+    const hours = Math.floor(attempt.duration_seconds / 3600);
+    const minutes = Math.floor((attempt.duration_seconds % 3600) / 60);
+    const seconds = attempt.duration_seconds % 60;
+
+    let durationString = '';
+    if (hours > 0) {
+      durationString += hours + 'h ';
+    }
+    if (minutes > 0) {
+      durationString += minutes + 'm ';
+    }
+    if (seconds > 0) {
+      durationString += seconds + 's';
+    }
+    return durationString.trim();
+  }
+
+  sortAttempts(): void {
+    this.attempts.sort((a, b) => {
+      switch (this.sortBy) {
+        case 'date_desc':
+          return new Date(b.completed_at).getTime() - new Date(a.completed_at).getTime();
+        case 'date_asc':
+          return new Date(a.completed_at).getTime() - new Date(b.completed_at).getTime();
+        case 'score_desc':
+          return b.score - a.score;
+        case 'score_asc':
+          return a.score - b.score;
+        case 'time_desc':
+          return (b.duration_seconds || 0) - (a.duration_seconds || 0);
+        case 'time_asc':
+          return (a.duration_seconds || 0) - (b.duration_seconds || 0);
+        case 'student_asc':
+          return a.student_name?.localeCompare(b.student_name || '') || 0;
+        default:
+          return 0;
+      }
     });
   }
 

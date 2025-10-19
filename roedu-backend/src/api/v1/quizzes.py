@@ -421,7 +421,35 @@ def get_quiz_attempts(
         QuizAttempt.quiz_id == quiz_id
     ).offset(skip).limit(limit).all()
     
-    return attempts
+    # Enrich attempts with student email and duration
+    result = []
+    for attempt in attempts:
+        attempt_dict = {
+            'id': attempt.id,
+            'quiz_id': attempt.quiz_id,
+            'student_id': attempt.student_id,
+            'score': attempt.score,
+            'max_score': attempt.max_score,
+            'started_at': attempt.started_at,
+            'completed_at': attempt.completed_at,
+            'time_remaining': attempt.time_remaining,
+            'is_expired': attempt.is_expired,
+        }
+        
+        # Get student email
+        from src.models.student import Student
+        student = db.query(Student).filter(Student.id == attempt.student_id).first()
+        if student and student.user:
+            attempt_dict['student_email'] = student.user.email
+        
+        # Calculate duration if both timestamps exist
+        if attempt.started_at and attempt.completed_at:
+            duration = (attempt.completed_at - attempt.started_at).total_seconds()
+            attempt_dict['duration_seconds'] = int(duration)
+        
+        result.append(attempt_dict)
+    
+    return result
 
 @router.get("/attempts/{attempt_id}", response_model=QuizResultResponse)
 def get_quiz_result(
