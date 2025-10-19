@@ -954,3 +954,54 @@ def auto_submit_quiz_attempt(
     db.refresh(attempt)
     
     return attempt
+
+@router.delete("/attempts/{attempt_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_quiz_attempt(
+    attempt_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Delete a quiz attempt (only for student-generated AI quizzes by the creator)
+    """
+    attempt = db.query(QuizAttempt).filter(QuizAttempt.id == attempt_id).first()
+    if not attempt:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Attempt not found"
+        )
+    
+    # Only the student who took the attempt can delete
+    if attempt.student_id != current_user.id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You can only delete your own attempts"
+        )
+    
+    # Only AI-generated quizzes can be deleted by students
+    quiz = attempt.quiz
+    if not quiz.is_ai_generated:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You can only delete attempts for AI-generated quizzes"
+        )
+    
+    try:
+        # Delete associated evaluation reports first
+        from src.models.ai_evaluation_report import AIEvaluationReport
+        db.query(AIEvaluationReport).filter(
+            AIEvaluationReport.quiz_attempt_id == attempt_id
+        ).delete()
+        
+        # Delete attempt
+        db.delete(attempt)
+        db.commit()
+        
+        return None
+    except Exception as e:
+        db.rollback()
+        logger.error(f"Failed to delete attempt: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to delete attempt"
+        )

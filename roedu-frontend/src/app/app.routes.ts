@@ -128,6 +128,13 @@ export const routes: Routes = [
             (m) => m.QuizResultsListComponent
           ),
       },
+      {
+        path: ':id',
+        loadComponent: () =>
+          import('./components/quizzes/quiz-take.component').then(
+            (m) => m.QuizTakeComponent
+          ),
+      },
     ],
   },
   {

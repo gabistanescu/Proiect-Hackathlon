@@ -164,7 +164,7 @@ interface QuizResult {
 
                         <!-- Report AI Evaluation Button / Status -->
                         <div class="report-ai-actions">
-                          <button *ngIf="!hasReportForQuestion(question.id) && userRole === 'student'" class="btn btn-warning" (click)="openReportForm(question.id)">
+                          <button *ngIf="!hasReportForQuestion(question.id) && userRole === 'student' && !isQuizAIGenerated()" class="btn btn-warning" (click)="openReportForm(question.id)">
                             🚩 Raportează Evaluare AI
                           </button>
                           <div *ngIf="hasReportForQuestion(question.id) && userRole === 'student'" class="report-status-badge" [ngClass]="'status-' + getReportStatus(question.id)">
@@ -175,6 +175,11 @@ interface QuizResult {
                           <!-- Professor Score Editor -->
                           <button *ngIf="userRole === 'professor' && !isEditingScore.includes(question.id)" class="btn btn-info" (click)="openScoreEditor(question.id)">
                             ✏️ Editează Nota
+                          </button>
+
+                          <!-- Delete AI-Generated Quiz Button (Students only) -->
+                          <button *ngIf="userRole === 'student' && isQuizAIGenerated()" class="btn btn-danger" (click)="deleteAIQuiz()">
+                            🗑️ Șterge Test
                           </button>
                         </div>
 
@@ -795,24 +800,40 @@ interface QuizResult {
     }
 
     .btn-primary {
-      background: #667eea;
+      background: #5548d9;
       color: white;
-      flex: 1;
+      padding: 0.75rem 2rem;
     }
 
     .btn-primary:hover {
-      background: #5568d3;
-      transform: translateY(-2px);
+      background: #4437c9;
     }
 
     .btn-secondary {
-      background: #f0f0f0;
-      color: #333;
-      flex: 1;
+      background: #6c757d;
+      color: white;
     }
 
     .btn-secondary:hover {
-      background: #e0e0e0;
+      background: #5a6268;
+    }
+
+    .btn-warning {
+      background: #ff9800;
+      color: white;
+    }
+
+    .btn-warning:hover {
+      background: #e68900;
+    }
+
+    .btn-danger {
+      background: #f44336;
+      color: white;
+    }
+
+    .btn-danger:hover {
+      background: #da190b;
     }
 
     .report-ai-actions {
@@ -1330,5 +1351,31 @@ export class QuizResultsComponent implements OnInit {
     const durationMin = Math.floor(durationMs / (1000 * 60));
     const durationSec = Math.floor((durationMs % (1000 * 60)) / 1000);
     return `${durationMin} min ${durationSec} sec`;
+  }
+
+  isQuizAIGenerated(): boolean {
+    return this.quiz?.is_ai_generated || false;
+  }
+
+  deleteAIQuiz(): void {
+    if (!this.result?.attempt?.id) {
+      alert('Nu s-a putut găsi ID-ul tentativei pentru ștergere.');
+      return;
+    }
+
+    if (!confirm('Ești sigur că vrei să ștergi acest test generat de AI? Aceasta va șterge și rezultatele asociate.')) {
+      return;
+    }
+
+    this.quizService.deleteAttempt(this.result.attempt.id).subscribe({
+      next: () => {
+        alert('Testul a fost șters cu succes!');
+        this.router.navigate(['/quizzes']);
+      },
+      error: (error) => {
+        console.error('Eroare la ștergerea tentativei:', error);
+        alert('Nu s-a putut șterge testul. Te rog încearcă din nou.');
+      }
+    });
   }
 }

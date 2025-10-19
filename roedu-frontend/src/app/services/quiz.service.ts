@@ -98,4 +98,8 @@ export class QuizService {
       {}
     );
   }
+
+  deleteAttempt(attemptId: number): Observable<void> {
+    return this.apiService.delete<void>(`/quizzes/attempts/${attemptId}`);
+  }
 }
